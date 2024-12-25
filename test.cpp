@@ -2,6 +2,7 @@
 #include "sys/nvpair.h"
 #include "sys/stdtypes.h"
 
+#include <exception>
 #include <iostream>
 
 #include <chrono>
@@ -58,7 +59,7 @@ bool create_snapshot(libzfs_handle_t *g_zfs, const std::string &dataset_name,
     return true;
 }
 
-// Return Value Optimization
+// Return Value Optimization?
 zfs::Pool some_func() {
     zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
     zfs::Pool myPool = zfsHandle.getPoolByName("pool2");
@@ -82,6 +83,15 @@ int main() {
 
     std::cout << "State 1 " << state1 << std::endl;
     std::cout << "State 2 " << state2 << std::endl;
+
+    try {
+        zfs::Pool yetAnotherPool{0};
+        yetAnotherPool = std::move(pool2FromFunc);
+        std::cout << "Pool name: " << yetAnotherPool.name() << std::endl;
+        std::cout << "Pool name: " << pool2FromFunc.name() << std::endl;
+    } catch (std::exception e) {
+        std::cout << "Caught exception!" << std::endl;
+    }
 
     // zfs::Pool myPool = zfsHandle.getPoolByName("pool2");
     // std::cout << "Got pool: " << myPool.name() << std::endl;

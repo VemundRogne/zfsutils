@@ -20,36 +20,68 @@ class Pool {
         handle_ = handle;
         std::cout << "Pool construct" << std::endl;
     };
+
+    // Destructor should close the handle _if_ we own it
     ~Pool() {
-        std::cout << "Pool closing handle" << handle_ << std::endl;
-        zpool_close(handle_);
+        // Use a function here, since we need this in the move assignment
+        // operator
+        closeZpoolIfOwned();
     };
 
-    // Deprecating copy-operator
-    // If we can copy, then we might be able to store a pointer to an invalid
-    // pool object.
-    [[deprecated("You should not use copy-operator of the Pool handle")]] Pool(
-        const Pool &) = default;
+    // Delete the copy constructor -- we only want move
+    Pool(const Pool &) = delete;
+    // Delete the copy assignment operator
+    Pool &operator=(const Pool &) = delete;
+
+    // Move-constructor
+    //   The original object is made unusable
+    //   The new object owns the data
+    Pool(Pool &&other) noexcept {
+        std::cout << "Pool move" << std::endl;
+        handle_ = other.handle_;
+        other.handle_ = nullptr;
+    }
+
+    // Move assignment operator
+    Pool &operator=(Pool &&other) noexcept {
+        if (this != &other) {
+            // If we _do_ own some object we must free it
+            closeZpoolIfOwned();
+
+            handle_ = other.handle_;
+            other.handle_ = nullptr;
+            std::cout << "Move assignment operator called" << std::endl;
+        }
+        return *this;
+    }
 
     std::string name(void) {
-        if (handle_ != nullptr) {
+        assertPointer();
 
-            return std::string{zpool_get_name(handle_)};
-        }
-
-        throw std::logic_error{"You tried to get the name of a zfs::Pool with "
-                               "no handle (the handle must have been deleted, "
-                               "which only happens if deletePool is called)"};
+        return std::string{zpool_get_name(handle_)};
     };
 
-    // If we need to delete the pool we might get away with simply invalidating
-    // this handle (and ensuring that all accesses respect this handle !=
-    // nullptr)
-    void deletePool() { handle_ = nullptr; };
-
-    zpool_handle_t *handle_;
+    zpool_handle_t *handle_ = nullptr;
 
   private:
+    /* Throw logic_error if we do not have a handle
+     * Functions that use the handle should call this before doing anything
+     * */
+    void assertPointer() {
+        if (handle_ == nullptr) {
+            throw std::logic_error(
+                "Pool pointer is invalid -- maybe you copied the Pool object?");
+        }
+    }
+
+    void closeZpoolIfOwned() {
+        if (handle_ != nullptr) {
+            std::cout << "Pool closing handle" << handle_ << std::endl;
+            zpool_close(handle_);
+        } else {
+            std::cout << "Pool did not close handle" << std::endl;
+        }
+    }
 }; // namespace zfs
 
 /**
@@ -83,36 +115,8 @@ class ZFSHandle {
         return Pool{zh};
     }
 
-    /* I want this in the constructor, but it seems I can not provide a lambda
-     * iterator that has acces to the pools-vector... So now the user must call
-     * this init...
-     * */
-    [[deprecated]] void initPoolHandles(void) {
-        if (poolHandlesInitDone) {
-            throw std::logic_error{"Can't init pool handles multiple times"};
-        }
-        poolHandlesInitDone = true;
-
-        // Zpool access is with iterators with specific
-        auto zpool_iter_callback = [](zpool_handle_t *zhp, void *data) -> int {
-            // ZFS gives some data; I do now know what it contains
-            (void)data;
-
-            zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
-            zfsHandle.pools.push_back(Pool{zhp});
-
-            // Returning 0 just keeps the iterator running
-            return 0;
-        };
-        zpool_iter(handle_, zpool_iter_callback, nullptr);
-    }
-
-    [[deprecated]] std::vector<Pool> pools;
-
   private:
     libzfs_handle_t *handle_;
-
-    [[deprecated]] bool poolHandlesInitDone{false};
 
     ZFSHandle() : handle_(libzfs_init()) {
         if (!handle_) {
