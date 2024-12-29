@@ -1,13 +1,148 @@
 #pragma once
 
+#include "sys/fs/zfs.h"
 #include <csignal>
 #include <libzfs.h>
 #include <stdexcept>
 
-#include <iostream>
+#include <functional>
 #include <vector>
 
+#include <iostream>
+
 namespace zfs {
+
+/*
+ * IterHelper is a class to mkae iterating with zfs easier
+ *
+ * The main problem we want to solve is to iterate _in the context_ of a class.
+ * This is not possible with just a lambda directly into the zfs-iterator.
+ */
+class IterHelper {
+  public:
+    static int zfs_callback(zfs_handle_t *zh, void *context) {
+        std::cout << "Iter helper called!" << std::endl;
+        auto *self = static_cast<IterHelper *>(context);
+        if (self->callback) {
+            return self->callback(zh);
+        }
+
+        // Stop iterating
+        return 1;
+    }
+
+    std::function<int(zfs_handle_t *zh)> callback;
+};
+
+class Dataset {
+  public:
+    Dataset(zfs_handle_t *handle) {
+        handle_ = handle;
+        std::cout << "Opened handle to Dataset: " << name() << std::endl;
+    };
+    ~Dataset() { closeZfsHandleIfOwned(); }
+
+    // Delete copy-constructor
+    Dataset(const Dataset &) = delete;
+    // Delete copy assignment operator
+    Dataset &operator=(const Dataset &) = delete;
+
+    // Move constructor
+    Dataset(Dataset &&other) noexcept {
+        handle_ = other.handle_;
+        other.handle_ = nullptr;
+    }
+
+    // Move assignment operator
+    Dataset &operator=(Dataset &&other) noexcept {
+        if (this != &other) {
+            // We have to close a handle if we happen to own one
+            closeZfsHandleIfOwned();
+
+            handle_ = other.handle_;
+            other.handle_ = nullptr;
+        }
+        return *this;
+    }
+
+    void list_snapshots(void) {
+        assertPointer();
+
+        auto iter_callback = [](zfs_handle_t *zh, void *) -> int {
+            std::cout << " Snapshot name: " << zfs_get_name(zh) << std::endl;
+
+            zfs_close(zh);
+            return 0;
+        };
+
+        zfs_iter_snapshots_sorted_v2(handle_, 0, iter_callback, nullptr, 0, 0);
+    }
+
+    std::vector<std::string> list_children(void) {
+        assertPointer();
+
+        std::vector<std::string> names;
+
+        IterHelper iterHelper;
+        iterHelper.callback = [&names](zfs_handle_t *zh) -> int {
+            std::cout << "More useful callback called!" << std::endl;
+            names.push_back(std::string(zfs_get_name(zh)));
+            zfs_close(zh);
+            return 0;
+        };
+
+        zfs_iter_filesystems_v2(handle_, 0, iterHelper.zfs_callback,
+                                &iterHelper);
+        return names;
+    }
+
+    std::vector<Dataset> get_children(void) {
+        std::vector<Dataset> children;
+
+        IterHelper iterHelper;
+        iterHelper.callback = [&children](zfs_handle_t *zh) -> int {
+            /* Can either do this: */
+            // Dataset child{zh};
+            // children.push_back(std::move(child));
+
+            /* Or this: */
+            children.emplace_back(Dataset{zh});
+
+            /* Or this: */
+            // children.push_back(Dataset{zh});
+            return 0;
+        };
+        zfs_iter_filesystems_v2(handle_, 0, iterHelper.zfs_callback,
+                                &iterHelper);
+
+        return children;
+    }
+
+    std::string name(void) {
+        assertPointer();
+
+        return std::string{zfs_get_name(handle_)};
+    };
+
+  private:
+    zfs_handle_t *handle_ = nullptr;
+    void closeZfsHandleIfOwned() {
+        if (handle_ != nullptr) {
+            std::cout << "Closing dataset handle: " << name() << std::endl;
+            zfs_close(handle_);
+        }
+    }
+
+    /* Throw logic_error if we do not have a handle
+     * Functions that use the handle should call this before doing anything
+     * */
+    void assertPointer() {
+        if (handle_ == nullptr) {
+            throw std::logic_error(
+                "Pool pointer is invalid -- maybe you copied the Pool object?");
+        }
+    }
+};
 
 /**
  * Handler for the zpool_handle
@@ -115,9 +250,18 @@ class ZFSHandle {
         return Pool{zh};
     }
 
-  private:
+    Dataset getDatasetByName(std::string name) {
+        zfs_handle_t *zh = zfs_open(handle_, name.c_str(), ZFS_TYPE_FILESYSTEM);
+        if (!zh) {
+            std::cout << "Failed to open dataset" << std::endl;
+            throw std::invalid_argument{"Dataset of that name does not exist"};
+        }
+        return Dataset{zh};
+    }
+
     libzfs_handle_t *handle_;
 
+  private:
     ZFSHandle() : handle_(libzfs_init()) {
         if (!handle_) {
             throw std::runtime_error("Failed to intitialize libzfs handle");

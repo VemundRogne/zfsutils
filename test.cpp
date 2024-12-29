@@ -1,4 +1,5 @@
 #include "libzfs.h"
+#include "sys/fs/zfs.h"
 #include "sys/nvpair.h"
 #include "sys/stdtypes.h"
 
@@ -40,7 +41,7 @@ void print_nvlist(zfs_handle_t *zh) {
 
 int print_dataset_name(zfs_handle_t *zh, void *data) {
     std::cout << " - " << zfs_get_name(zh) << std::endl;
-    zfs_iter_filesystems(zh, print_dataset_name, nullptr);
+    // zfs_iter_filesystems(zh, print_dataset_name, nullptr);
     return 0;
 }
 
@@ -60,38 +61,33 @@ bool create_snapshot(libzfs_handle_t *g_zfs, const std::string &dataset_name,
 }
 
 // Return Value Optimization?
-zfs::Pool some_func() {
+zfs::Pool some_func(std::string somePool) {
     zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
-    zfs::Pool myPool = zfsHandle.getPoolByName("pool2");
+    zfs::Pool myPool = zfsHandle.getPoolByName(somePool);
     std::cout << "Pool pointer (in func): " << myPool.handle_ << std::endl;
     std::cout << "Got pool: " << myPool.name() << std::endl;
-    return std::move(myPool);
+
+    return myPool;
 }
 
 int main() {
     // Get the singleton
     zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+    zfs::Dataset dataset = zfsHandle.getDatasetByName("pool2");
 
-    zfs::Pool pool2FromFunc = some_func();
-    zfs::Pool pool2Again = zfsHandle.getPoolByName("pool2");
-
-    std::cout << "Pool pointer 1: " << pool2FromFunc.handle_ << std::endl;
-    std::cout << "Pool pointer 2: " << pool2Again.handle_ << std::endl;
-
-    const char *state1 = zpool_get_state_str(pool2FromFunc.handle_);
-    const char *state2 = zpool_get_state_str(pool2Again.handle_);
-
-    std::cout << "State 1 " << state1 << std::endl;
-    std::cout << "State 2 " << state2 << std::endl;
-
-    try {
-        zfs::Pool yetAnotherPool{0};
-        yetAnotherPool = std::move(pool2FromFunc);
-        std::cout << "Pool name: " << yetAnotherPool.name() << std::endl;
-        std::cout << "Pool name: " << pool2FromFunc.name() << std::endl;
-    } catch (std::exception e) {
-        std::cout << "Caught exception!" << std::endl;
+    for (auto child_name : dataset.list_children()) {
+        std::cout << " " << child_name << std::endl;
     }
+
+    for (auto &child : dataset.get_children()) {
+        std::cout << " " << child.name() << std::endl;
+    }
+
+    //  dataset.list_snapshots();
+    //  zfs::Dataset dataset2 = zfsHandle.getDatasetByName("pool2/pictures");
+    //  dataset2.list_snapshots();
+
+    // zfs_iter_root(zfsHandle.get(), print_dataset_name, nullptr);
 
     // zfs::Pool myPool = zfsHandle.getPoolByName("pool2");
     // std::cout << "Got pool: " << myPool.name() << std::endl;
