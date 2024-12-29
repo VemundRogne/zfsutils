@@ -83,7 +83,7 @@ class Dataset {
     }
 
     void list_snapshots(void) {
-        assertPointer();
+        assertHandle();
 
         auto iter_callback = [](zfs_handle_t *zh, void *) -> int {
             std::cout << " Snapshot name: " << zfs_get_name(zh) << std::endl;
@@ -96,7 +96,7 @@ class Dataset {
     }
 
     std::vector<std::string> list_children(void) {
-        assertPointer();
+        assertHandle();
 
         std::vector<std::string> names;
 
@@ -136,13 +136,13 @@ class Dataset {
     }
 
     std::string name(void) {
-        assertPointer();
+        assertHandle();
 
         return std::string{zfs_get_name(handle_)};
     };
 
     zfs_handle_t *getHandle() {
-        assertPointer();
+        assertHandle();
         return handle_;
     };
 
@@ -158,7 +158,7 @@ class Dataset {
     /* Throw logic_error if we do not have a handle
      * Functions that use the handle should call this before doing anything
      * */
-    void assertPointer() {
+    void assertHandle() {
         if (handle_ == nullptr) {
             throw std::logic_error(
                 "Pool pointer is invalid -- maybe you copied the Pool object?");
@@ -213,7 +213,7 @@ class Pool {
     }
 
     std::string name(void) {
-        assertPointer();
+        assertHandle();
 
         return std::string{zpool_get_name(handle_)};
     };
@@ -224,7 +224,7 @@ class Pool {
     /* Throw logic_error if we do not have a handle
      * Functions that use the handle should call this before doing anything
      * */
-    void assertPointer() {
+    void assertHandle() {
         if (handle_ == nullptr) {
             throw std::logic_error(
                 "Pool pointer is invalid -- maybe you copied the Pool object?");
