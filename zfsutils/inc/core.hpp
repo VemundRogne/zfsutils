@@ -17,20 +17,37 @@ namespace zfs {
  *
  * The main problem we want to solve is to iterate _in the context_ of a class.
  * This is not possible with just a lambda directly into the zfs-iterator.
+ *
+ * We solve this by having this class, and passing a pointer to it through the
+ * iterator (void* data)
+ *
+ * General usage:
+ *  IterHelper iterHelper;
+ *  iterHelper.calback = [](zfs_handle_t *zh) -> int {
+ *      // do something
+ *      // Either close or keep zfs_handle_t
+ *      return 0 if you want to keep iterating, 1 if you are done iterating
+ *  }
  */
 class IterHelper {
   public:
+    // This is the callback that zfs should use.
+    // It converts the context passed through the iterator into the instance of
+    // the IterHelper and then calls its registered callback
     static int zfs_callback(zfs_handle_t *zh, void *context) {
         std::cout << "Iter helper called!" << std::endl;
+
         auto *self = static_cast<IterHelper *>(context);
         if (self->callback) {
             return self->callback(zh);
+        } else {
+            // Stop iterating if we do not have a callback
+            return 1;
         }
-
-        // Stop iterating
-        return 1;
     }
 
+    // And this is the callback back to my context (typically a lambda in a
+    // class)
     std::function<int(zfs_handle_t *zh)> callback;
 };
 
@@ -122,6 +139,11 @@ class Dataset {
         assertPointer();
 
         return std::string{zfs_get_name(handle_)};
+    };
+
+    zfs_handle_t *getHandle() {
+        assertPointer();
+        return handle_;
     };
 
   private:
