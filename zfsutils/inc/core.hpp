@@ -160,8 +160,8 @@ class Dataset {
      * */
     void assertHandle() {
         if (handle_ == nullptr) {
-            throw std::logic_error(
-                "Pool pointer is invalid -- maybe you copied the Pool object?");
+            throw std::logic_error("Pool pointer is invalid! You should never "
+                                   "be able to get here");
         }
     }
 };
