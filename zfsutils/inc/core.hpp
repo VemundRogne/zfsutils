@@ -35,8 +35,6 @@ class IterHelper {
     // It converts the context passed through the iterator into the instance of
     // the IterHelper and then calls its registered callback
     static int zfs_callback(zfs_handle_t *zh, void *context) {
-        std::cout << "Iter helper called!" << std::endl;
-
         auto *self = static_cast<IterHelper *>(context);
         if (self->callback) {
             return self->callback(zh);
@@ -51,11 +49,59 @@ class IterHelper {
     std::function<int(zfs_handle_t *zh)> callback;
 };
 
+class Snapshot {
+  public:
+    Snapshot(zfs_handle_t *handle) { handle_ = handle; };
+    ~Snapshot() { closeZfsHandleIfOwned(); };
+
+    // Delete copy-constructor
+    Snapshot(const Snapshot &) = delete;
+    // Delete copy-assignment operator
+    Snapshot &operator=(const Snapshot &) = delete;
+
+    // Move constructor
+    Snapshot(Snapshot &&other) noexcept {
+        handle_ = other.handle_;
+        other.handle_ = nullptr;
+    }
+
+    Snapshot &operator=(Snapshot &&other) noexcept {
+        if (this != &other) {
+            closeZfsHandleIfOwned();
+
+            handle_ = other.handle_;
+            other.handle_ = nullptr;
+        }
+        return *this;
+    }
+
+    std::string name(void) {
+        assertHandle();
+
+        return std::string{zfs_get_name(handle_)};
+    };
+
+  private:
+    zfs_handle_t *handle_;
+
+    void assertHandle() {
+        if (handle_ == nullptr) {
+            throw std::logic_error("Dataset handle is invalid!");
+        }
+    }
+
+    void closeZfsHandleIfOwned() {
+        if (handle_ != nullptr) {
+            zfs_close(handle_);
+        }
+    }
+};
+
 class Dataset {
   public:
     Dataset(zfs_handle_t *handle) {
         handle_ = handle;
-        std::cout << "Opened handle to Dataset: " << name() << std::endl;
+        // std::cout << "Opened handle to Dataset: " << name() << std::endl;
     };
     ~Dataset() { closeZfsHandleIfOwned(); }
 
@@ -82,38 +128,26 @@ class Dataset {
         return *this;
     }
 
-    void list_snapshots(void) {
+    std::vector<Snapshot> get_snapshots(void) {
         assertHandle();
 
-        auto iter_callback = [](zfs_handle_t *zh, void *) -> int {
-            std::cout << " Snapshot name: " << zfs_get_name(zh) << std::endl;
-
-            zfs_close(zh);
-            return 0;
-        };
-
-        zfs_iter_snapshots_sorted_v2(handle_, 0, iter_callback, nullptr, 0, 0);
-    }
-
-    std::vector<std::string> list_children(void) {
-        assertHandle();
-
-        std::vector<std::string> names;
-
+        std::vector<Snapshot> snaps;
         IterHelper iterHelper;
-        iterHelper.callback = [&names](zfs_handle_t *zh) -> int {
-            std::cout << "More useful callback called!" << std::endl;
-            names.push_back(std::string(zfs_get_name(zh)));
-            zfs_close(zh);
-            return 0;
+
+        iterHelper.callback = [&snaps](zfs_handle_t *zh) -> int {
+            snaps.push_back(Snapshot{zh});
+
+            // stop at once.
+            return 1;
         };
 
-        zfs_iter_filesystems_v2(handle_, 0, iterHelper.zfs_callback,
-                                &iterHelper);
-        return names;
+        zfs_iter_snapshots_sorted_v2(handle_, 0, iterHelper.zfs_callback,
+                                     &iterHelper, 0, 0);
+        return snaps;
     }
 
     std::vector<Dataset> get_children(void) {
+        assertHandle();
         std::vector<Dataset> children;
 
         IterHelper iterHelper;
@@ -135,6 +169,19 @@ class Dataset {
         return children;
     }
 
+    void print_dependents() {
+        std::cout << "Printing dependents of " << name() << std::endl;
+        IterHelper iterHelper;
+        iterHelper.callback = [](zfs_handle_t *zh) -> int {
+            std::cout << zfs_get_name(zh) << std::endl;
+            zfs_close(zh);
+            return 0;
+        };
+
+        zfs_iter_dependents_v2(handle_, 0, B_TRUE, iterHelper.zfs_callback,
+                               &iterHelper);
+    }
+
     std::string name(void) {
         assertHandle();
 
@@ -150,7 +197,7 @@ class Dataset {
     zfs_handle_t *handle_ = nullptr;
     void closeZfsHandleIfOwned() {
         if (handle_ != nullptr) {
-            std::cout << "Closing dataset handle: " << name() << std::endl;
+            // std::cout << "Closing dataset handle: " << name() << std::endl;
             zfs_close(handle_);
         }
     }
@@ -160,8 +207,7 @@ class Dataset {
      * */
     void assertHandle() {
         if (handle_ == nullptr) {
-            throw std::logic_error("Pool pointer is invalid! You should never "
-                                   "be able to get here");
+            throw std::logic_error("Dataset handle is invalid!");
         }
     }
 };

@@ -12,6 +12,7 @@
 
 #include "core.hpp"
 
+#include <stdexcept>
 #include <thread>
 
 void print_nvlist(zfs_handle_t *zh) {
@@ -73,15 +74,39 @@ zfs::Pool some_func(std::string somePool) {
 int main() {
     // Get the singleton
     zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
-    zfs::Dataset dataset = zfsHandle.getDatasetByName("pool2");
 
-    for (auto child_name : dataset.list_children()) {
-        std::cout << " " << child_name << std::endl;
-    }
+    try {
+        zfs::Dataset dataset = zfsHandle.getDatasetByName("pool2");
 
-    for (auto &child : dataset.get_children()) {
-        std::cout << " " << child.name() << std::endl;
+        std::vector<zfs::Dataset> children = dataset.get_children();
+        std::cout << "Dataset " << dataset.name() << " has " << children.size()
+                  << " children:" << std::endl;
+        for (auto &child : children) {
+            std::cout << " " << child.name() << std::endl;
+        }
+
+        zfs::Dataset &some_dataset = children.at(0);
+
+        std::vector<zfs::Snapshot> snapshots = some_dataset.get_snapshots();
+        std::cout << "Dataset " << some_dataset.name() << " has "
+                  << snapshots.size() << " snapshots:" << std::endl;
+        for (auto &snap : snapshots) {
+            std::cout << " " << snap.name() << std::endl;
+        }
+
+    } catch (std::out_of_range &e) {
+        std::cout << "Caught an out-of-range exception!" << std::endl;
+        std::cout << e.what() << std::endl;
+    } catch (std::logic_error &e) {
+        std::cout << "Caught logic_error!" << std::endl;
+        std::cout << e.what() << std::endl;
+    } catch (std::exception &e) {
+        std::cout << "Caught some exception!" << std::endl;
+        std::cout << e.what() << std::endl;
     }
+    // for (auto &child : snaps[0].list_children()) {
+    // std::cout << "Snap child: " << child << std::endl;
+    //}
 
     //  dataset.list_snapshots();
     //  zfs::Dataset dataset2 = zfsHandle.getDatasetByName("pool2/pictures");
