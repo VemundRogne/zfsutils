@@ -297,6 +297,24 @@ class Pool {
         return std::string{zpool_get_name(handle_)};
     };
 
+    int createDataset(std::string name) {
+        nvlist_t *props;
+        nvlist_alloc(&props, NV_UNIQUE_NAME, 0);
+        std::string dataset_name = this->name() + "/" + name;
+
+        std::cout << "Trying to make dataset " << dataset_name << std::endl;
+
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+
+        int retval = zfs_create(zfsHandle.get(), dataset_name.c_str(),
+                                ZFS_TYPE_FILESYSTEM, props);
+        if (retval != 0) {
+            throw std::logic_error{"Could not create dataset with name '" +
+                                   name + "' in pool '" + this->name() + "'"};
+        }
+        return 0;
+    }
+
     zpool_handle_t *handle_ = nullptr;
 
   private:
