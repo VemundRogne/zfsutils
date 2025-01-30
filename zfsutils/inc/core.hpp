@@ -12,6 +12,39 @@
 
 namespace zfs {
 
+/**
+ * Singleton for the ZFS core handle
+ */
+class ZFSHandle {
+  public:
+    static ZFSHandle &instance() {
+        static ZFSHandle instance;
+        return instance;
+    }
+
+    ZFSHandle(const ZFSHandle &) = delete;
+    ZFSHandle &operator=(const ZFSHandle &) = delete;
+
+    libzfs_handle_t *get() const { return handle_; }
+
+    ~ZFSHandle() {
+        if (handle_) {
+            std::cout << "Destroying libzfs handle!" << std::endl;
+            libzfs_fini(handle_);
+            handle_ = nullptr;
+        }
+    }
+
+    libzfs_handle_t *handle_;
+
+  private:
+    ZFSHandle() : handle_(libzfs_init()) {
+        if (!handle_) {
+            throw std::runtime_error("Failed to intitialize libzfs handle");
+        }
+    }
+};
+
 /*
  * IterHelper is a class to mkae iterating with zfs easier
  *
@@ -287,53 +320,27 @@ class Pool {
     }
 }; // namespace zfs
 
-/**
- * Singleton for the ZFS core handle
- */
-class ZFSHandle {
+class ZFS {
   public:
-    static ZFSHandle &instance() {
-        static ZFSHandle instance;
-        return instance;
-    }
+    static Pool getPoolByName(std::string name) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
 
-    ZFSHandle(const ZFSHandle &) = delete;
-    ZFSHandle &operator=(const ZFSHandle &) = delete;
-
-    libzfs_handle_t *get() const { return handle_; }
-
-    ~ZFSHandle() {
-        if (handle_) {
-            std::cout << "Destroying libzfs handle!" << std::endl;
-            libzfs_fini(handle_);
-            handle_ = nullptr;
-        }
-    }
-
-    Pool getPoolByName(std::string name) {
-        zpool_handle_t *zh = zpool_open(handle_, name.c_str());
+        zpool_handle_t *zh = zpool_open(zfsHandle.get(), name.c_str());
         if (!zh) {
             throw std::invalid_argument{"Pool of that name does not exist"};
         }
         return Pool{zh};
     }
 
-    Dataset getDatasetByName(std::string name) {
-        zfs_handle_t *zh = zfs_open(handle_, name.c_str(), ZFS_TYPE_FILESYSTEM);
+    static Dataset getDatasetByName(std::string name) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+        zfs_handle_t *zh =
+            zfs_open(zfsHandle.get(), name.c_str(), ZFS_TYPE_FILESYSTEM);
         if (!zh) {
             std::cout << "Failed to open dataset" << std::endl;
             throw std::invalid_argument{"Dataset of that name does not exist"};
         }
         return Dataset{zh};
-    }
-
-    libzfs_handle_t *handle_;
-
-  private:
-    ZFSHandle() : handle_(libzfs_init()) {
-        if (!handle_) {
-            throw std::runtime_error("Failed to intitialize libzfs handle");
-        }
     }
 };
 
