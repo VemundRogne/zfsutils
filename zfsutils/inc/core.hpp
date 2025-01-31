@@ -183,7 +183,7 @@ class Dataset {
     Snapshot openSnapshot(std::string snapshotName) {
         zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
 
-        std::string fullSnapName = name() + "/" + snapshotName;
+        std::string fullSnapName = name() + "@" + snapshotName;
 
         zfs_handle_t *zh =
             zfs_open(zfsHandle.get(), fullSnapName.c_str(), ZFS_TYPE_SNAPSHOT);
