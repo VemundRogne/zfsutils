@@ -56,9 +56,17 @@ set_tests_properties(cleanup_testpool_A PROPERTIES FIXTURES_CLEANUP testpools)
 set_tests_properties(cleanup_testpool_B PROPERTIES FIXTURES_CLEANUP testpools)
 
 
+# We add a test that should create a dataset in zfsutils_testpool_A:
 add_executable(test_create_dataset.exe ./test/test_create_dataset.cpp)
 target_link_libraries(test_create_dataset.exe PUBLIC zfsutils)
 
 add_test(NAME test_create_dataset COMMAND test_create_dataset.exe)
 set_tests_properties(test_create_dataset PROPERTIES FIXTURES_REQUIRED testpools)
+set_tests_properties(test_create_dataset PROPERTIES FIXTURES_SETUP pool_A_testDataset)
 
+# We add a test that should make snapshots on the pool_a_testDataset
+add_executable(test_create_snapshots.exe ./test/test_create_snapshots.cpp)
+target_link_libraries(test_create_snapshots.exe PUBLIC zfsutils)
+
+add_test(NAME test_create_snapshots COMMAND test_create_snapshots.exe)
+set_tests_properties(test_create_snapshots PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
