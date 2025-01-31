@@ -315,6 +315,20 @@ class Pool {
         }
     }
 
+    Dataset openDataset(std::string datasetName) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+
+        std::string fullDatasetName = name() + "/" + datasetName;
+
+        zfs_handle_t *zh = zfs_open(zfsHandle.get(), fullDatasetName.c_str(),
+                                    ZFS_TYPE_FILESYSTEM);
+        if (!zh) {
+            std::cout << "Failed to open dataset" << std::endl;
+            throw std::invalid_argument{"Dataset of that name does not exist"};
+        }
+        return Dataset{zh};
+    }
+
     zpool_handle_t *handle_ = nullptr;
 
   private:
