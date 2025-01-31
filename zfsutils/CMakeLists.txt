@@ -55,3 +55,10 @@ add_test(NAME cleanup_testpool_B COMMAND "zpool" "destroy" "zfsutils_testpool_B"
 set_tests_properties(cleanup_testpool_A PROPERTIES FIXTURES_CLEANUP testpools)
 set_tests_properties(cleanup_testpool_B PROPERTIES FIXTURES_CLEANUP testpools)
 
+
+add_executable(test_create_dataset.exe ./test/test_create_dataset.cpp)
+target_link_libraries(test_create_dataset.exe PUBLIC zfsutils)
+
+add_test(NAME test_create_dataset COMMAND test_create_dataset.exe)
+set_tests_properties(test_create_dataset PROPERTIES FIXTURES_REQUIRED testpools)
+
