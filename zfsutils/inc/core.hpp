@@ -2,6 +2,7 @@
 
 #include "sys/fs/zfs.h"
 #include <csignal>
+#include <exception>
 #include <libzfs.h>
 #include <stdexcept>
 
@@ -180,6 +181,47 @@ class Dataset {
         return snaps;
     }
 
+    Snapshot openSnapshot(std::string snapshotName) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+
+        std::string fullSnapName = name() + "@" + snapshotName;
+
+        zfs_handle_t *zh =
+            zfs_open(zfsHandle.get(), fullSnapName.c_str(), ZFS_TYPE_SNAPSHOT);
+        if (!zh) {
+            throw std::invalid_argument{"Snapshot '" + fullSnapName +
+                                        "' does not exist"};
+        }
+
+        return Snapshot{zh};
+    }
+
+    Snapshot createSnapshot(std::string snapshotName) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+
+        // First try to open a snapshot with that name
+        try {
+            Snapshot snap = openSnapshot(snapshotName);
+
+            throw std::logic_error{"snapshot '" + snapshotName +
+                                   "' already exists!"};
+
+        } catch (std::invalid_argument &e) {
+            // Do nothing on this catch; we expect this to be thrown
+        }
+
+        std::string fullSnapName = name() + "@" + snapshotName;
+
+        int retval = zfs_snapshot(zfsHandle.get(), fullSnapName.c_str(),
+                                  B_FALSE, nullptr);
+        if (retval != 0) {
+            throw std::logic_error{"Could not create snapshot '" +
+                                   fullSnapName + "'"};
+        }
+
+        return openSnapshot(snapshotName);
+    }
+
     std::vector<Dataset> get_children(void) {
         assertHandle();
         std::vector<Dataset> children;
@@ -313,6 +355,20 @@ class Pool {
             throw std::logic_error{"Could not create dataset with name '" +
                                    name + "' in pool '" + this->name() + "'"};
         }
+    }
+
+    Dataset openDataset(std::string datasetName) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+
+        std::string fullDatasetName = name() + "/" + datasetName;
+
+        zfs_handle_t *zh = zfs_open(zfsHandle.get(), fullDatasetName.c_str(),
+                                    ZFS_TYPE_FILESYSTEM);
+        if (!zh) {
+            std::cout << "Failed to open dataset" << std::endl;
+            throw std::invalid_argument{"Dataset of that name does not exist"};
+        }
+        return Dataset{zh};
     }
 
     zpool_handle_t *handle_ = nullptr;
