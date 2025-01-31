@@ -46,21 +46,22 @@ class ZFSHandle {
 };
 
 /*
- * IterHelper is a class to mkae iterating with zfs easier
+ * IterHelper is a class to make iterating with zfs easier
  *
- * The main problem we want to solve is to iterate _in the context_ of a class.
- * This is not possible with just a lambda directly into the zfs-iterator.
+ * The problem we need to solve is how to iterate _in the context of a class_
+ * This is not possible with just a lambda directly into the zfs-iterator
  *
- * We solve this by having this class, and passing a pointer to it through the
- * iterator (void* data)
+ * The solution is to use the (void* data) context variable in the zfs_iterators
  *
  * General usage:
  *  IterHelper iterHelper;
- *  iterHelper.calback = [](zfs_handle_t *zh) -> int {
+ *  iterHelper.callback = [&some_captured_variable](zfs_handle_t *zh) -> int {
  *      // do something
  *      // Either close or keep zfs_handle_t
  *      return 0 if you want to keep iterating, 1 if you are done iterating
  *  }
+ *  zfs_iter_filesystems_v2(some_zfs_handle_t, 0, iterHelper.zfs_callback,
+ *                          &iterhelper);
  */
 class IterHelper {
   public:
