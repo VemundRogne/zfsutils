@@ -2,6 +2,7 @@
 
 #include "sys/fs/zfs.h"
 #include <csignal>
+#include <exception>
 #include <libzfs.h>
 #include <stdexcept>
 
@@ -193,6 +194,32 @@ class Dataset {
         }
 
         return Snapshot{zh};
+    }
+
+    Snapshot createSnapshot(std::string snapshotName) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+
+        // First try to open a snapshot with that name
+        try {
+            Snapshot snap = openSnapshot(snapshotName);
+
+            throw std::logic_error{"snapshot '" + snapshotName +
+                                   "' already exists!"};
+
+        } catch (std::invalid_argument &e) {
+            // Do nothing on this catch; we expect this to be thrown
+        }
+
+        std::string fullSnapName = name() + "@" + snapshotName;
+
+        int retval = zfs_snapshot(zfsHandle.get(), fullSnapName.c_str(),
+                                  B_FALSE, nullptr);
+        if (retval != 0) {
+            throw std::logic_error{"Could not create snapshot '" +
+                                   fullSnapName + "'"};
+        }
+
+        return openSnapshot(snapshotName);
     }
 
     std::vector<Dataset> get_children(void) {

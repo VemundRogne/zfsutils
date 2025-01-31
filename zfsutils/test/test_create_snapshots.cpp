@@ -11,9 +11,17 @@ int main() {
                   << std::endl;
 
         try {
+            zfs::Snapshot snap = testDataset.createSnapshot("Hello");
+        } catch (std::exception &e) {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
+
+        try {
             zfs::Snapshot snap = testDataset.openSnapshot("Hello");
         } catch (std::exception &e) {
             std::cout << e.what() << std::endl;
+            return -1;
         }
 
     } catch (std::exception &e) {
