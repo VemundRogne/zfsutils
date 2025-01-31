@@ -4,10 +4,7 @@
 int main() {
     try {
         zfs::Pool testpool_A = zfs::ZFS::getPoolByName("zfsutils_testpool_A");
-        int retval = testpool_A.createDataset("testDataset");
-        if (retval != 0) {
-            return -1;
-        }
+        testpool_A.createDataset("testDataset");
     } catch (std::logic_error &e) {
         std::cout << "Caught logic_error!" << std::endl;
         std::cout << e.what() << std::endl;
@@ -19,5 +16,6 @@ int main() {
     }
 
     std::cout << "I think I made a dataset? :)" << std::endl;
+
     return 0;
 }

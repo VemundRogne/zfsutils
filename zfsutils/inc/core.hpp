@@ -298,7 +298,7 @@ class Pool {
         return std::string{zpool_get_name(handle_)};
     };
 
-    int createDataset(std::string name) {
+    void createDataset(std::string name) {
         nvlist_t *props;
         nvlist_alloc(&props, NV_UNIQUE_NAME, 0);
         std::string dataset_name = this->name() + "/" + name;
@@ -313,7 +313,6 @@ class Pool {
             throw std::logic_error{"Could not create dataset with name '" +
                                    name + "' in pool '" + this->name() + "'"};
         }
-        return 0;
     }
 
     zpool_handle_t *handle_ = nullptr;
