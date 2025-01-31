@@ -180,6 +180,21 @@ class Dataset {
         return snaps;
     }
 
+    Snapshot openSnapshot(std::string snapshotName) {
+        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+
+        std::string fullSnapName = name() + "/" + snapshotName;
+
+        zfs_handle_t *zh =
+            zfs_open(zfsHandle.get(), fullSnapName.c_str(), ZFS_TYPE_SNAPSHOT);
+        if (!zh) {
+            throw std::invalid_argument{"Snapshot '" + fullSnapName +
+                                        "' does not exist"};
+        }
+
+        return Snapshot{zh};
+    }
+
     std::vector<Dataset> get_children(void) {
         assertHandle();
         std::vector<Dataset> children;
