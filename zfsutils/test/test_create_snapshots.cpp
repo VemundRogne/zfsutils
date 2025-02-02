@@ -61,6 +61,18 @@ int main() {
             return -1;
         }
 
+        // Unmount the dataset
+        zfs_unmount(testDataset.getHandle(), nullptr, 0);
+
+        // Assert that the file is no longer accessible
+        if (std::filesystem::exists(testDataset.getMountpoint() +
+                                    "/.zfs/snapshot/" + secondSnapshot.name() +
+                                    "/testfile.txt")) {
+            std::cerr << "File is somehow accessible, when I tried to unmount "
+                         "the dataset:("
+                      << std::endl;
+            return -1;
+        }
     } catch (std::exception &e) {
         std::cout << e.what() << std::endl;
         return -1;
