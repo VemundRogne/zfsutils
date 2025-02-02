@@ -22,7 +22,7 @@ int main() {
         zfs::Pool testpool_A = zfs::ZFS::getPoolByName("zfsutils_testpool_A");
         zfs::Dataset testDataset = testpool_A.openDataset("testDataset");
 
-        std::string targetMountpoint = "/mnt/testMountpoint";
+        std::string targetMountpoint = "/mnt/testMountpointA";
 
         std::cout << "Trying to set mountpoint to '" << targetMountpoint << "'"
                   << std::endl;
