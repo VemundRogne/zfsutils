@@ -163,6 +163,15 @@ class Dataset {
         return *this;
     }
 
+    void setMountpoint(std::string mountPoint) {
+        int retval =
+            zfs_prop_set(getHandle(), "mountpoint", mountPoint.c_str());
+        if (retval != 0) {
+            throw std::logic_error{"Could not set mountpoint for dataset '" +
+                                   name() + "' to '" + mountPoint + "'"};
+        }
+    }
+
     std::vector<Snapshot> get_snapshots(void) {
         assertHandle();
 
