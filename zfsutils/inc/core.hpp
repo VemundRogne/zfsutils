@@ -172,6 +172,18 @@ class Dataset {
         }
     }
 
+    std::string getMountpoint() {
+        char mountpoint[512]{0};
+        int retval = zfs_prop_get(getHandle(), ZFS_PROP_MOUNTPOINT,
+                                  &mountpoint[0], 512, NULL, 0, 0, B_FALSE);
+        if (retval != 0) {
+            throw std::logic_error{"Could not get mountpoint for dataset '" +
+                                   name() + "'"};
+        }
+
+        return std::string{mountpoint};
+    }
+
     std::vector<Snapshot> get_snapshots(void) {
         assertHandle();
 
