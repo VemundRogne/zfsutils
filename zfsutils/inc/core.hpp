@@ -1,6 +1,5 @@
 #pragma once
 
-#include "sys/fs/zfs.h"
 #include <csignal>
 #include <exception>
 #include <libzfs.h>
