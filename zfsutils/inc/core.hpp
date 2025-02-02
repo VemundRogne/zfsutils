@@ -109,12 +109,20 @@ class Snapshot {
         return *this;
     }
 
-    std::string name(void) {
+    std::string fullName(void) {
         assertHandle();
 
         return std::string{zfs_get_name(handle_)};
     };
 
+    std::string name(void) {
+        assertHandle();
+
+        std::string fullName{zfs_get_name(handle_)};
+        size_t delim_pos = fullName.find("@");
+        return std::string{&fullName[delim_pos] + 1,
+                           fullName.length() - 1 - delim_pos};
+    }
   private:
     zfs_handle_t *handle_;
 
