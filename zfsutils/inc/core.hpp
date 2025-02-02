@@ -1,6 +1,5 @@
 #pragma once
 
-#include "sys/fs/zfs.h"
 #include <csignal>
 #include <exception>
 #include <libzfs.h>
@@ -161,6 +160,27 @@ class Dataset {
             other.handle_ = nullptr;
         }
         return *this;
+    }
+
+    void setMountpoint(std::string mountPoint) {
+        int retval =
+            zfs_prop_set(getHandle(), "mountpoint", mountPoint.c_str());
+        if (retval != 0) {
+            throw std::logic_error{"Could not set mountpoint for dataset '" +
+                                   name() + "' to '" + mountPoint + "'"};
+        }
+    }
+
+    std::string getMountpoint() {
+        char mountpoint[512]{0};
+        int retval = zfs_prop_get(getHandle(), ZFS_PROP_MOUNTPOINT,
+                                  &mountpoint[0], 512, NULL, 0, 0, B_FALSE);
+        if (retval != 0) {
+            throw std::logic_error{"Could not get mountpoint for dataset '" +
+                                   name() + "'"};
+        }
+
+        return std::string{mountpoint};
     }
 
     std::vector<Snapshot> get_snapshots(void) {
