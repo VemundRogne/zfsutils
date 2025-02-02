@@ -13,7 +13,8 @@ int main() {
         // dataset. Then we want to 'put' something in the dataset, and then
         // make another snapshot
 
-        testDataset.createSnapshot("initialSnapshot");
+        zfs::Snapshot firstSnapshot =
+            testDataset.createSnapshot("initialSnapshot");
 
         try {
             std::ofstream outFile;
@@ -33,7 +34,32 @@ int main() {
             return -1;
         }
 
-        testDataset.createSnapshot("secondSnapshot");
+        std::string secondSnapshotName = "secondSnapshot";
+        zfs::Snapshot secondSnapshot =
+            testDataset.createSnapshot(secondSnapshotName);
+
+        if (secondSnapshot.name() != secondSnapshotName) {
+            std::cout << "'" + secondSnapshot.name() + "'"
+                      << "!=" << "'" + secondSnapshotName + "'" << std::endl;
+            return -1;
+        }
+
+        // Assert that the file _is not_ in the firstSnapshot
+        if (std::filesystem::exists(testDataset.getMountpoint() +
+                                    "/.zfs/snapshot/" + firstSnapshot.name() +
+                                    "/testfile.txt")) {
+            std::cerr << "File is in snapshot where it should not" << std::endl;
+            return -1;
+        }
+
+        // Assert that the file _is_ in the second snapshot
+        if (!std::filesystem::exists(testDataset.getMountpoint() +
+                                     "/.zfs/snapshot/" + secondSnapshot.name() +
+                                     "/testfile.txt")) {
+            std::cerr << "File is _not_ in snapshot where it should"
+                      << std::endl;
+            return -1;
+        }
 
     } catch (std::exception &e) {
         std::cout << e.what() << std::endl;
