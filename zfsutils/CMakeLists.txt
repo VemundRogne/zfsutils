@@ -26,6 +26,8 @@ target_link_directories(zfsutils INTERFACE ${zfs_SOURCE_DIR}/.libs)
 target_link_libraries(zfsutils INTERFACE zfs)
 target_link_libraries(zfsutils INTERFACE nvpair)
 
+add_library(testutils ./test/testutils.cpp)
+target_include_directories(testutils PUBLIC ${CMAKE_CURRENT_LIST_DIR}/test)
 
 # We need some tests:
 # for example memory-leak-checks: 'valgrind --leak-check=full ./build/binary.exe'
