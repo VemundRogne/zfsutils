@@ -206,8 +206,11 @@ class Dataset {
         iterHelper.callback = [&snaps](zfs_handle_t *zh) -> int {
             snaps.push_back(Snapshot{zh});
 
-            // stop at once.
-            return 1;
+            // Note that zfs_iter_snapshots_sorted_v2 does not care about this
+            // return-value
+            //
+            // the non-sorted variant _does care_
+            return 0;
         };
 
         zfs_iter_snapshots_sorted_v2(handle_, 0, iterHelper.zfs_callback,
