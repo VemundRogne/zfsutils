@@ -123,6 +123,12 @@ class Snapshot {
         return std::string{&fullName[delim_pos] + 1,
                            fullName.length() - 1 - delim_pos};
     }
+
+    zfs_handle_t *getHandle() {
+        assertHandle();
+        return handle_;
+    };
+
   private:
     zfs_handle_t *handle_;
 
