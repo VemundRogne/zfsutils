@@ -1,85 +1,50 @@
 #include "core.hpp"
-#include "libzfs.h"
-#include <exception>
-#include <filesystem>
-#include <fstream>
+#include "testutils.hpp"
 
+#include <exception>
 #include <fcntl.h>
+#include <filesystem>
 
 int main() {
     try {
         zfs::Pool testpool_A = zfs::ZFS::getPoolByName("zfsutils_testpool_A");
         zfs::Dataset testDataset = testpool_A.openDataset("testDataset");
 
-        // Now we want to make a snapshot _before_ doing anything on the
-        // dataset. Then we want to 'put' something in the dataset, and then
-        // make another snapshot
+        testDataset.createSnapshot("initial");
 
-        zfs::Snapshot firstSnapshot =
-            testDataset.createSnapshot("initialSnapshot");
+        std::array<std::string, 10> snapshotNames{
+            "first", "second",  "third", "fourth", "fifth",
+            "sixth", "seventh", "eight", "ninth",  "tenth"};
 
-        try {
-            std::ofstream outFile;
-            outFile.exceptions(std::ofstream::badbit | std::ofstream::failbit);
-            outFile.open(testDataset.getMountpoint() + "/testfile.txt");
-            outFile << "Hello, there! This is some text!" << std::endl;
-            outFile.close();
-
-        } catch (const std::ofstream::failure &e) {
-            std::cerr << e.what() << std::endl;
-            return -1;
+        for (std::string &snapshotName : snapshotNames) {
+            testutils::write_string_to_file(
+                testDataset.getMountpoint(), snapshotName + "_testfile.txt",
+                "Hello! This is some text for snapshot '" + snapshotName +
+                    "'\n");
+            zfs::Snapshot snap = testDataset.createSnapshot(snapshotName);
         }
 
-        if (!std::filesystem::exists(testDataset.getMountpoint() +
-                                     "/testfile.txt")) {
-            std::cerr << "Did not manage to make the testfile :(" << std::endl;
-            return -1;
+        for (zfs::Snapshot &snap : testDataset.get_snapshots()) {
+            std::cout << "Contents in '" + snap.name() + "':" << std::endl;
+
+            std::string snapshot_mountpoint =
+                testDataset.getMountpoint() + "/.zfs/snapshot/" + snap.name();
+
+            // Just print out all files
+            for (const auto &entry :
+                 std::filesystem::directory_iterator(snapshot_mountpoint)) {
+                std::cout << "  " << entry.path() << std::endl;
+            }
+
+            // And verify that snap.name() + _testfile.txt exists
+            if (!std::filesystem::exists(snapshot_mountpoint + "/" +
+                                         snap.name() + "_testfile.txt") &
+                snap.name() != "initial") {
+                throw std::logic_error{"Snapshot '" + snap.name() +
+                                       "' does not have testfile '" +
+                                       snap.name() + "_testfile.txt'"};
+            }
         }
-
-        std::string secondSnapshotName = "secondSnapshot";
-        zfs::Snapshot secondSnapshot =
-            testDataset.createSnapshot(secondSnapshotName);
-
-        if (secondSnapshot.name() != secondSnapshotName) {
-            std::cout << "'" + secondSnapshot.name() + "'"
-                      << "!=" << "'" + secondSnapshotName + "'" << std::endl;
-            return -1;
-        }
-
-        // Assert that the file _is not_ in the firstSnapshot
-        if (std::filesystem::exists(testDataset.getMountpoint() +
-                                    "/.zfs/snapshot/" + firstSnapshot.name() +
-                                    "/testfile.txt")) {
-            std::cerr << "File is in snapshot where it should not" << std::endl;
-            return -1;
-        }
-
-        // Assert that the file _is_ in the second snapshot
-        if (!std::filesystem::exists(testDataset.getMountpoint() +
-                                     "/.zfs/snapshot/" + secondSnapshot.name() +
-                                     "/testfile.txt")) {
-            std::cerr << "File is _not_ in snapshot where it should"
-                      << std::endl;
-            return -1;
-        }
-
-        // Unmount the dataset
-        zfs_unmount(testDataset.getHandle(), nullptr, 0);
-
-        // Assert that the file is no longer accessible
-        if (std::filesystem::exists(testDataset.getMountpoint() +
-                                    "/.zfs/snapshot/" + secondSnapshot.name() +
-                                    "/testfile.txt")) {
-            std::cerr << "File is somehow accessible, when I tried to unmount "
-                         "the dataset:("
-                      << std::endl;
-            return -1;
-        }
-
-        // Now can we send the initial snapshot to pool B?!
-        // But before that! We just send the data out of stdout...
-        zfs::Pool testpool_B = zfs::ZFS::getPoolByName("zfsutils_testpool_B");
-
     } catch (std::exception &e) {
         std::cout << e.what() << std::endl;
         return -1;

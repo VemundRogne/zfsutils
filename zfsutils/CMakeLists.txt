@@ -68,7 +68,7 @@ set_tests_properties(test_create_dataset PROPERTIES FIXTURES_SETUP pool_A_testDa
 
 # We add a test that should make snapshots on the pool_a_testDataset
 add_executable(test_create_snapshots.exe ./test/test_create_snapshots.cpp)
-target_link_libraries(test_create_snapshots.exe PUBLIC zfsutils)
+target_link_libraries(test_create_snapshots.exe PUBLIC zfsutils testutils)
 
 add_test(NAME test_create_snapshots COMMAND test_create_snapshots.exe)
 set_tests_properties(test_create_snapshots PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
