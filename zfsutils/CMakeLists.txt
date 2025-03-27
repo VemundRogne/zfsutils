@@ -79,3 +79,7 @@ target_link_libraries(test_send_snapshots.exe PUBLIC zfsutils)
 
 add_test(NAME test_send_snapshots COMMAND test_send_snapshots.exe)
 set_tests_properties(test_send_snapshots PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
+
+add_executable(test_piper.exe ./test/test_piper.cpp)
+target_link_libraries(test_piper.exe PUBLIC zfsutils)
+add_test(NAME test_piper COMMAND test_piper.exe)
