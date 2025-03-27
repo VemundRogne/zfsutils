@@ -4,30 +4,30 @@
 #include <filesystem>
 #include <thread>
 
+#include "piper.hpp"
+#include "serial.hpp"
+
 std::vector<char> data;
 
-void pipe_to_data(int readFd) {
-    ssize_t bytesRead;
-    char buffer[4096];
+void pipe_to_data(SerialReader &reader) {
+    while (auto received = reader.get(5000)) {
+        std::cout << "Got " << received.value().size() << " bytes of data"
+                  << std::endl;
 
-    // We just read until we get something else than data
-    while ((bytesRead = read(readFd, buffer, sizeof(buffer))) > 0) {
-        std::cout << "Got some data..." << bytesRead << std::endl;
-        for (int i = 0; i < bytesRead; i++) {
-            data.push_back(buffer[i]);
+        for (auto &c : received.value()) {
+            data.push_back(c);
         }
-        // std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 
-void pipe_from_data(int writeFd) {
+void pipe_from_data(SerialWriter &writer) {
     for (char &datapoint : data) {
-        int retval = write(writeFd, &datapoint, 1);
+        int retval = writer.send(datapoint);
         if (retval != 1) {
             throw std::logic_error{"pipe from data failed to write a byte"};
         }
     }
-    close(writeFd);
+    writer.terminate();
 }
 
 int main() {
@@ -41,52 +41,52 @@ int main() {
         // But before that! We just send the data out of stdout...
         zfs::Pool testpool_B = zfs::ZFS::getPoolByName("zfsutils_testpool_B");
 
-        int mypipe[2];
-        int pipe_retval = pipe(mypipe);
-        if (pipe_retval != 0) {
-            throw std::logic_error("Pipe open fail...");
+        {
+            Piper piper;
+            RxPipe rxPipe = piper.getRx();
+            TxPipe txPipe = piper.getTx();
+
+            std::thread processorThread{pipe_to_data, std::ref(rxPipe)};
+
+            sendflags_t flags = {0};
+            flags.replicate = B_TRUE;
+            // flags.doall = B_TRUE;
+            int zfs_send_retval =
+                zfs_send(sourceDataset.getHandle(), NULL, "third", &flags,
+                         txPipe.getPipeFd(), NULL, NULL, NULL);
+
+            // We have to close the pipe -- because the processorThread needs to
+            // know when there is no more data
+            txPipe.terminate();
+
+            processorThread.join();
+
+            std::cout << "ZFS send retval: " << zfs_send_retval << std::endl;
+            std::cout << "Amount of data " << data.size() << std::endl;
         }
 
-        std::thread processorThread{pipe_to_data, mypipe[0]};
+        {
+            Piper piper;
+            RxPipe rxPipe = piper.getRx();
+            TxPipe txPipe = piper.getTx();
 
-        sendflags_t flags = {0};
-        flags.replicate = B_TRUE;
-        // flags.doall = B_TRUE;
-        int zfs_send_retval = zfs_send(sourceDataset.getHandle(), NULL, "third",
-                                       &flags, mypipe[1], NULL, NULL, NULL);
+            std::thread data_to_pipe_thread{pipe_from_data, std::ref(txPipe)};
 
-        // We have to close the pipe -- because the processorThread needs to
-        // know when there is no more data
-        close(mypipe[1]);
+            zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
 
-        processorThread.join();
-        close(mypipe[0]);
+            std::cout << testpool_B.name() << std::endl;
 
-        std::cout << "ZFS send retval: " << zfs_send_retval << std::endl;
-        std::cout << "Amount of data " << data.size() << std::endl;
+            recvflags myRecvflags{};
+            // myRecvflags.force = B_TRUE;
+            myRecvflags.verbose = B_TRUE;
+            myRecvflags.nomount = B_TRUE;
+            int zfs_recv_retval = zfs_receive(
+                zfsHandle.get(), (testpool_B.name() + "/testDataset").c_str(),
+                NULL, &myRecvflags, rxPipe.getPipeFd(), NULL);
+            data_to_pipe_thread.join();
 
-        int recvPipe[2];
-        int recvPipeRetval = pipe(mypipe);
-        if (recvPipeRetval != 0) {
-            throw std::logic_error("recvPipe open fail...");
+            std::cout << "zfs receive retval: " << zfs_recv_retval << std::endl;
         }
-
-        std::thread data_to_pipe_thread{pipe_from_data, mypipe[1]};
-
-        zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
-
-        std::cout << testpool_B.name() << std::endl;
-
-        recvflags myRecvflags{};
-        // myRecvflags.force = B_TRUE;
-        myRecvflags.verbose = B_TRUE;
-        myRecvflags.nomount = B_TRUE;
-        int zfs_recv_retval = zfs_receive(
-            zfsHandle.get(), (testpool_B.name() + "/testDataset").c_str(), NULL,
-            &myRecvflags, mypipe[0], NULL);
-        data_to_pipe_thread.join();
-
-        std::cout << "zfs receive retval: " << zfs_recv_retval << std::endl;
 
         zfs::Dataset dataset_in_b = testpool_B.openDataset("testDataset");
 
