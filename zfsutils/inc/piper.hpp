@@ -63,6 +63,8 @@ class RxPipe : public SerialReader {
         return *this;
     }
 
+    int getPipeFd() { return pipeBase.getPipeBaseFd(); }
+
     std::optional<std::vector<char>> get(int maxlen) override {
         std::vector<char> output_bytes;
 
@@ -110,6 +112,8 @@ class TxPipe : public SerialWriter {
         return *this;
     }
 
+    int getPipeFd() { return pipeBase.getPipeBaseFd(); }
+
     int send(char c) override { return write(pipeBase.getPipeBaseFd(), &c, 1); }
     void terminate() override { pipeBase.closePipeBase(); }
 };
@@ -132,5 +136,6 @@ class Piper {
     }
     RxPipe getRx() { return std::move(rxPipe); }
     TxPipe getTx() { return std::move(txPipe); }
+
     int pipes[2]{};
 };
