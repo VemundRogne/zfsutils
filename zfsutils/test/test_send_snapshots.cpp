@@ -105,6 +105,14 @@ int main() {
             }
         }
 
+        // Assert that a snapshot called "third" is present
+        try {
+            zfs::Snapshot snap = dataset_in_b.openSnapshot("third");
+        } catch (std::exception &e) {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
+
     } catch (std::exception &e) {
         std::cout << e.what() << std::endl;
         return -1;
