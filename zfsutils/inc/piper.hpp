@@ -136,7 +136,7 @@ class TxPipe : public SerialWriter, PipeBase {
         return *this;
     }
 
-    int getPipeFd() { return PipeBase::getPipeBaseFd(); }
+    [[deprecated]] int getPipeFd() { return PipeBase::getPipeBaseFd(); }
     std::optional<int> getFd() { return PipeBase::getFd(); }
 
     int send(char c) override {
