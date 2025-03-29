@@ -44,7 +44,10 @@ class PipeBase {
         return *this;
     }
 
-    int getPipeBaseFd() { return pipeFd.value_or(-1); }
+    [[deprecated("Use getFd instead")]] int getPipeBaseFd() {
+        return pipeFd.value_or(-1);
+    }
+    std::optional<int> getFd() { return pipeFd; }
 
     void closePipeBase() { closePipeBaseIfOwned(); }
 };
