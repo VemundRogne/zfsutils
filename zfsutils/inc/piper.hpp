@@ -52,25 +52,21 @@ class PipeBase {
     void closePipeBase() { closePipeBaseIfOwned(); }
 };
 
-class RxPipe : public SerialReader {
+class RxPipe : public SerialReader, PipeBase {
   private:
-    PipeBase pipeBase;
-
   public:
-    RxPipe(int pipeNr) : pipeBase{pipeNr} {};
+    RxPipe(int pipeNr) : PipeBase{pipeNr} {};
     RxPipe(const RxPipe &) = delete;
     RxPipe &operator=(const RxPipe &) = delete;
 
-    RxPipe(RxPipe &&other) : pipeBase{-1} {
-        pipeBase = std::move(other.pipeBase);
-    }
+    RxPipe(RxPipe &&other) : PipeBase{std::move(other)} {}
 
     RxPipe &operator=(RxPipe &&other) noexcept {
-        pipeBase = std::move(other.pipeBase);
+        PipeBase::operator=(std::move(other));
         return *this;
     }
 
-    int getPipeFd() { return pipeBase.getPipeBaseFd(); }
+    int getPipeFd() { return PipeBase::getPipeBaseFd(); }
 
     std::optional<std::vector<char>> get(int maxlen) override {
         std::vector<char> output_bytes;
@@ -78,7 +74,7 @@ class RxPipe : public SerialReader {
         ssize_t bytesRead;
         char character;
 
-        while ((bytesRead = read(pipeBase.getPipeBaseFd(), &character, 1))) {
+        while ((bytesRead = read(PipeBase::getPipeBaseFd(), &character, 1))) {
             if (bytesRead == -1) {
                 throw std::logic_error{"Pipe read fail!"};
                 break;
