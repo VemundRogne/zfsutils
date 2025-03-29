@@ -38,13 +38,29 @@ void producer(SerialWriter &writeThing) {
 
 int main() {
 
+    {
+        Piper myPiper{};
+        TxPipe txPipe = myPiper.getTx();
+        RxPipe rxPipe = myPiper.getRx();
+
+        std::thread t1{consumer, std::ref(rxPipe)};
+        std::thread t2{producer, std::ref(txPipe)};
+
+        t1.join();
+        t2.join();
+    }
+
     Piper myPiper{};
     TxPipe txPipe = myPiper.getTx();
-    RxPipe rxPipe = myPiper.getRx();
 
-    std::thread t1{consumer, std::ref(rxPipe)};
-    std::thread t2{producer, std::ref(txPipe)};
+    {
+        TxPipe sub_txPipe = std::move(txPipe);
+        RxPipe rxPipe = myPiper.getRx();
 
-    t1.join();
-    t2.join();
+        std::thread t1{consumer, std::ref(rxPipe)};
+        std::thread t2{producer, std::ref(sub_txPipe)};
+
+        t1.join();
+        t2.join();
+    }
 }
