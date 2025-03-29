@@ -118,42 +118,41 @@ class RxPipe : public SerialReader, PipeBase {
     };
 };
 
-class TxPipe : public SerialWriter {
+class TxPipe : public SerialWriter, PipeBase {
   private:
-    PipeBase pipeBase;
-
   public:
-    TxPipe(int pipeNr) : pipeBase{pipeNr} {};
+    [[deprecated]] TxPipe(int pipeNr) : PipeBase{pipeNr} {};
+    TxPipe(std::optional<int> pipeNr) : PipeBase{pipeNr} {};
+
     TxPipe(const TxPipe &) = delete;
     TxPipe &operator=(const TxPipe &) = delete;
 
     ~TxPipe() { std::cout << "Closing TxPipe" << std::endl; }
 
-    TxPipe(TxPipe &&other) : pipeBase{-1} {
-        pipeBase = std::move(other.pipeBase);
-    }
+    TxPipe(TxPipe &&other) : PipeBase{std::move(other)} {}
 
     TxPipe &operator=(TxPipe &&other) noexcept {
-        pipeBase = std::move(other.pipeBase);
+        PipeBase::operator=(std::move(other));
         return *this;
     }
 
-    int getPipeFd() { return pipeBase.getPipeBaseFd(); }
+    int getPipeFd() { return PipeBase::getPipeBaseFd(); }
+    std::optional<int> getFd() { return PipeBase::getFd(); }
 
     int send(char c) override {
-        std::optional<int> fd = pipeBase.getFd();
+        std::optional<int> fd = PipeBase::getFd();
         if (!fd.has_value()) {
             throw std::logic_error{"Trying to read from a non-existant fd..."};
         }
         return write(fd.value(), &c, 1);
     }
-    void terminate() override { pipeBase.closePipeBase(); }
+    void terminate() override { PipeBase::closePipeBase(); }
 };
 
 class Piper {
   public:
     RxPipe rxPipe{std::nullopt};
-    TxPipe txPipe{-1};
+    TxPipe txPipe{std::nullopt};
 
     Piper() {
         int pipe_creation_retval = pipe(pipes);
@@ -163,7 +162,7 @@ class Piper {
         std::cout << "Made some pipes! " << pipes[0] << " " << pipes[1]
                   << std::endl;
         rxPipe = RxPipe{std::optional<int>{pipes[0]}};
-        txPipe = TxPipe{pipes[1]};
+        txPipe = TxPipe{std::optional<int>{pipes[1]}};
         std::cout << "End of piper constructor" << std::endl;
     }
     RxPipe getRx() { return std::move(rxPipe); }
