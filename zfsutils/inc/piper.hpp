@@ -7,17 +7,17 @@
 
 class PipeBase {
   private:
-    int pipenr;
+    std::optional<int> pipeFd;
     void closePipeBaseIfOwned() {
-        if (pipenr != -1) {
+        if (pipeFd.has_value()) {
             std::cout << "Closing pipe" << std::endl;
-            close(pipenr);
-            pipenr = -1;
+            close(pipeFd.value());
+            pipeFd = {};
         }
     }
 
   public:
-    PipeBase(int nr) : pipenr(nr) {};
+    PipeBase(int nr) : pipeFd(nr) {};
     ~PipeBase() { closePipeBaseIfOwned(); }
 
     // Delete copy-constructor
@@ -26,21 +26,25 @@ class PipeBase {
     PipeBase &operator=(const PipeBase &) = delete;
 
     PipeBase(PipeBase &&other) noexcept {
-        pipenr = other.pipenr;
-        other.pipenr = -1;
+        if (other.pipeFd.has_value()) {
+            pipeFd = other.pipeFd.value();
+            other.pipeFd = {};
+        }
     }
 
     PipeBase &operator=(PipeBase &&other) noexcept {
         if (this != &other) {
             closePipeBaseIfOwned();
 
-            pipenr = other.pipenr;
-            other.pipenr = -1;
+            if (other.pipeFd.has_value()) {
+                pipeFd = other.pipeFd.value();
+                other.pipeFd = {};
+            }
         }
         return *this;
     }
 
-    int getPipeBaseFd() { return pipenr; }
+    int getPipeBaseFd() { return pipeFd.value_or(-1); }
 
     void closePipeBase() { closePipeBaseIfOwned(); }
 };
