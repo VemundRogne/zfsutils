@@ -7,17 +7,19 @@
 
 class PipeBase {
   private:
-    std::optional<int> pipeFd;
+    std::optional<int> pipeFd{std::nullopt};
     void closePipeBaseIfOwned() {
         if (pipeFd.has_value()) {
-            std::cout << "Closing pipe" << std::endl;
+            std::cout << "Closing pipe with fd number " << pipeFd.value()
+                      << std::endl;
             close(pipeFd.value());
             pipeFd = {};
         }
     }
 
   public:
-    PipeBase(int nr) : pipeFd(nr) {};
+    [[deprecated]] PipeBase(int nr) : pipeFd(nr) {};
+    PipeBase(std::optional<int> nr) : pipeFd{nr} {};
     ~PipeBase() { closePipeBaseIfOwned(); }
 
     // Delete copy-constructor
@@ -55,7 +57,17 @@ class PipeBase {
 class RxPipe : public SerialReader, PipeBase {
   private:
   public:
-    RxPipe(int pipeNr) : PipeBase{pipeNr} {};
+    RxPipe(std::optional<int> pipeNr) : PipeBase{pipeNr} {};
+    RxPipe() : PipeBase{std::nullopt} {};
+
+    ~RxPipe() {
+        std::cout << "Closing RxPipe" << std::endl;
+        if (PipeBase::getFd().has_value()) {
+            std::cout << " RxPipe's pipebase has nr "
+                      << PipeBase::getFd().value() << std::endl;
+        }
+    }
+
     RxPipe(const RxPipe &) = delete;
     RxPipe &operator=(const RxPipe &) = delete;
 
@@ -66,15 +78,24 @@ class RxPipe : public SerialReader, PipeBase {
         return *this;
     }
 
-    int getPipeFd() { return PipeBase::getPipeBaseFd(); }
+    [[deprecated("Use getFd instead")]] int getPipeFd() {
+        return PipeBase::getPipeBaseFd();
+    }
+    std::optional<int> getFd() { return PipeBase::getFd(); }
 
     std::optional<std::vector<char>> get(int maxlen) override {
+
+        std::optional<int> fd = PipeBase::getFd();
+        if (!fd.has_value()) {
+            throw std::logic_error{"Trying to get from a non-existant Fd..."};
+        }
+
         std::vector<char> output_bytes;
 
         ssize_t bytesRead;
         char character;
 
-        while ((bytesRead = read(PipeBase::getPipeBaseFd(), &character, 1))) {
+        while ((bytesRead = read(fd.value(), &character, 1))) {
             if (bytesRead == -1) {
                 throw std::logic_error{"Pipe read fail!"};
                 break;
@@ -106,6 +127,8 @@ class TxPipe : public SerialWriter {
     TxPipe(const TxPipe &) = delete;
     TxPipe &operator=(const TxPipe &) = delete;
 
+    ~TxPipe() { std::cout << "Closing TxPipe" << std::endl; }
+
     TxPipe(TxPipe &&other) : pipeBase{-1} {
         pipeBase = std::move(other.pipeBase);
     }
@@ -117,23 +140,29 @@ class TxPipe : public SerialWriter {
 
     int getPipeFd() { return pipeBase.getPipeBaseFd(); }
 
-    int send(char c) override { return write(pipeBase.getPipeBaseFd(), &c, 1); }
+    int send(char c) override {
+        std::optional<int> fd = pipeBase.getFd();
+        if (!fd.has_value()) {
+            throw std::logic_error{"Trying to read from a non-existant fd..."};
+        }
+        return write(fd.value(), &c, 1);
+    }
     void terminate() override { pipeBase.closePipeBase(); }
 };
 
 class Piper {
   public:
-    RxPipe rxPipe{-1};
+    RxPipe rxPipe{std::nullopt};
     TxPipe txPipe{-1};
 
     Piper() {
         int pipe_creation_retval = pipe(pipes);
-        if (pipe_creation_retval != 0) {
-            std::logic_error{"Could not create pipes :("};
+        if (pipe_creation_retval != 0 || pipes[0] == 0 || pipes[1] == 0) {
+            throw std::logic_error{"Could not create pipes :("};
         }
         std::cout << "Made some pipes! " << pipes[0] << " " << pipes[1]
                   << std::endl;
-        rxPipe = RxPipe{pipes[0]};
+        rxPipe = RxPipe{std::optional<int>{pipes[0]}};
         txPipe = TxPipe{pipes[1]};
         std::cout << "End of piper constructor" << std::endl;
     }
