@@ -18,7 +18,6 @@ class PipeBase {
     }
 
   public:
-    [[deprecated]] PipeBase(int nr) : pipeFd(nr) {};
     PipeBase(std::optional<int> nr) : pipeFd{nr} {};
     ~PipeBase() { closePipeBaseIfOwned(); }
 
@@ -46,9 +45,6 @@ class PipeBase {
         return *this;
     }
 
-    [[deprecated("Use getFd instead")]] int getPipeBaseFd() {
-        return pipeFd.value_or(-1);
-    }
     std::optional<int> getFd() { return pipeFd; }
 
     void closePipeBase() { closePipeBaseIfOwned(); }
@@ -78,9 +74,6 @@ class RxPipe : public SerialReader, PipeBase {
         return *this;
     }
 
-    [[deprecated("Use getFd instead")]] int getPipeFd() {
-        return PipeBase::getPipeBaseFd();
-    }
     std::optional<int> getFd() { return PipeBase::getFd(); }
 
     std::optional<std::vector<char>> get(int maxlen) override {
@@ -121,7 +114,6 @@ class RxPipe : public SerialReader, PipeBase {
 class TxPipe : public SerialWriter, PipeBase {
   private:
   public:
-    [[deprecated]] TxPipe(int pipeNr) : PipeBase{pipeNr} {};
     TxPipe(std::optional<int> pipeNr) : PipeBase{pipeNr} {};
 
     TxPipe(const TxPipe &) = delete;
@@ -136,7 +128,6 @@ class TxPipe : public SerialWriter, PipeBase {
         return *this;
     }
 
-    [[deprecated]] int getPipeFd() { return PipeBase::getPipeBaseFd(); }
     std::optional<int> getFd() { return PipeBase::getFd(); }
 
     int send(char c) override {
