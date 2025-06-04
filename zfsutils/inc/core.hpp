@@ -109,10 +109,24 @@ class Snapshot {
         return *this;
     }
 
-    std::string name(void) {
+    std::string fullName(void) {
         assertHandle();
 
         return std::string{zfs_get_name(handle_)};
+    };
+
+    std::string name(void) {
+        assertHandle();
+
+        std::string fullName{zfs_get_name(handle_)};
+        size_t delim_pos = fullName.find("@");
+        return std::string{&fullName[delim_pos] + 1,
+                           fullName.length() - 1 - delim_pos};
+    }
+
+    zfs_handle_t *getHandle() {
+        assertHandle();
+        return handle_;
     };
 
   private:
@@ -192,8 +206,11 @@ class Dataset {
         iterHelper.callback = [&snaps](zfs_handle_t *zh) -> int {
             snaps.push_back(Snapshot{zh});
 
-            // stop at once.
-            return 1;
+            // Note that zfs_iter_snapshots_sorted_v2 does not care about this
+            // return-value
+            //
+            // the non-sorted variant _does care_
+            return 0;
         };
 
         zfs_iter_snapshots_sorted_v2(handle_, 0, iterHelper.zfs_callback,
