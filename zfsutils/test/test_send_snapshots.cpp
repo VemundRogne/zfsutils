@@ -51,9 +51,14 @@ int main() {
             sendflags_t flags = {0};
             flags.replicate = B_TRUE;
             // flags.doall = B_TRUE;
+
+            if (!txPipe.getFd().has_value()) {
+                throw std::logic_error{"TxPipe does not have file-descriptor"};
+            }
+
             int zfs_send_retval =
                 zfs_send(sourceDataset.getHandle(), NULL, "third", &flags,
-                         txPipe.getPipeFd(), NULL, NULL, NULL);
+                         txPipe.getFd().value(), NULL, NULL, NULL);
 
             // We have to close the pipe -- because the processorThread needs to
             // know when there is no more data
@@ -80,9 +85,14 @@ int main() {
             // myRecvflags.force = B_TRUE;
             myRecvflags.verbose = B_TRUE;
             myRecvflags.nomount = B_TRUE;
+
+            if (!rxPipe.getFd().has_value()) {
+                throw std::logic_error{"RxPipe does not have file-descriptor"};
+            }
+
             int zfs_recv_retval = zfs_receive(
                 zfsHandle.get(), (testpool_B.name() + "/testDataset").c_str(),
-                NULL, &myRecvflags, rxPipe.getPipeFd(), NULL);
+                NULL, &myRecvflags, rxPipe.getFd().value(), NULL);
             data_to_pipe_thread.join();
 
             std::cout << "zfs receive retval: " << zfs_recv_retval << std::endl;
