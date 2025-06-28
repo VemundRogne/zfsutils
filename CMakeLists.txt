@@ -5,11 +5,24 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/CPM.cmake)
 
 enable_testing()
 
-# This package now must be built by the user... Not very cool
 CPMAddPackage(
     NAME zfs
-    SOURCE_DIR /home/vemund/git/zfs
+    GIT_REPOSITORY https://github.com/openzfs/zfs.git
+    GIT_TAG zfs-2.2.6
     DOWNLOAD_ONLY
+)
+
+execute_process(
+    COMMAND "./autogen.sh"
+    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
+)
+execute_process(
+    COMMAND "./configure"
+    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
+)
+execute_process(
+    COMMAND "make"
+    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
 )
 
 project(zfsutils CXX)
