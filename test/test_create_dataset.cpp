@@ -1,9 +1,11 @@
-#include "core.hpp"
-#include "libzfs.h"
+#include "zfsutils/dataset.hpp"
+#include "zfsutils/pool.hpp"
+
+#include <iostream>
 
 int main() {
     try {
-        zfs::Pool testpool_A = zfs::ZFS::getPoolByName("zfsutils_testpool_A");
+        zfsutils::Pool testpool_A = zfsutils::Pool::open("zfsutils_testpool_A");
         testpool_A.createDataset("testDataset");
     } catch (std::logic_error &e) {
         std::cout << "Caught logic_error!" << std::endl;
@@ -19,16 +21,19 @@ int main() {
 
     try {
         // Expects zh to be an initialized handle...
-        zfs::Pool testpool_A = zfs::ZFS::getPoolByName("zfsutils_testpool_A");
-        zfs::Dataset testDataset = testpool_A.openDataset("testDataset");
+        zfsutils::Pool testpool_A = zfsutils::Pool::open("zfsutils_testpool_A");
+        std::optional<zfsutils::Dataset> testDataset =
+            testpool_A.openDataset("testDataset");
+
+        assert(testDataset.has_value());
 
         std::string targetMountpoint = "/mnt/testMountpointA";
 
         std::cout << "Trying to set mountpoint to '" << targetMountpoint << "'"
                   << std::endl;
-        testDataset.setMountpoint(targetMountpoint);
+        testDataset->setMountpoint(targetMountpoint);
 
-        std::string mountpointAfter = testDataset.getMountpoint();
+        std::string mountpointAfter = testDataset->getMountpoint();
 
         if (targetMountpoint == mountpointAfter) {
             std::cout << "Success!" << std::endl;
