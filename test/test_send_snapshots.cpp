@@ -1,4 +1,6 @@
-#include "core.hpp"
+#include "zfsutils/dataset.hpp"
+#include "zfsutils/pool.hpp"
+#include "zfsutils/snapshot.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -32,14 +34,18 @@ void pipe_from_data(SerialWriter &writer) {
 
 int main() {
     try {
-        zfs::Pool testpool_A = zfs::ZFS::getPoolByName("zfsutils_testpool_A");
-        zfs::Dataset sourceDataset = testpool_A.openDataset("testDataset");
+        auto testpool_A = zfsutils::Pool::open("zfsutils_testpool_A");
+        auto sourceDataset = testpool_A.openDataset("testDataset");
 
-        zfs_unmount(sourceDataset.getHandle(), nullptr, 0);
+        if (!sourceDataset.has_value()) {
+            throw std::logic_error{"Could not open dataset"};
+        }
+
+        zfs_unmount(sourceDataset->getHandle(), nullptr, 0);
 
         // Now can we send the initial snapshot to pool B?!
         // But before that! We just send the data out of stdout...
-        zfs::Pool testpool_B = zfs::ZFS::getPoolByName("zfsutils_testpool_B");
+        auto testpool_B = zfsutils::Pool::open("zfsutils_testpool_B");
 
         {
             Piper piper;
@@ -57,7 +63,7 @@ int main() {
             }
 
             int zfs_send_retval =
-                zfs_send(sourceDataset.getHandle(), NULL, "third", &flags,
+                zfs_send(sourceDataset->getHandle(), NULL, "third", &flags,
                          txPipe.getFd().value(), NULL, NULL, NULL);
 
             // We have to close the pipe -- because the processorThread needs to
@@ -77,7 +83,7 @@ int main() {
 
             std::thread data_to_pipe_thread{pipe_from_data, std::ref(txPipe)};
 
-            zfs::ZFSHandle &zfsHandle = zfs::ZFSHandle::instance();
+            auto &zfsHandle = zfsutils::internal::LibzfsHandle::instance();
 
             std::cout << testpool_B.name() << std::endl;
 
@@ -98,15 +104,16 @@ int main() {
             std::cout << "zfs receive retval: " << zfs_recv_retval << std::endl;
         }
 
-        zfs::Dataset dataset_in_b = testpool_B.openDataset("testDataset");
+        auto dataset_in_b = testpool_B.openDataset("testDataset");
 
-        zfs_mount(dataset_in_b.getHandle(), nullptr, 0);
+        zfs_mount(dataset_in_b->getHandle(), nullptr, 0);
 
-        for (zfs::Snapshot &snap : dataset_in_b.get_snapshots()) {
+        for (auto &snap : dataset_in_b.value().getSnapshots()) {
             std::cout << "Contents in '" + snap.name() + "':" << std::endl;
 
             std::string snapshot_mountpoint =
-                dataset_in_b.getMountpoint() + "/.zfs/snapshot/" + snap.name();
+                dataset_in_b.value().getMountpoint() + "/.zfs/snapshot/" +
+                snap.name();
 
             // Just print out all files
             for (const auto &entry :
@@ -117,7 +124,7 @@ int main() {
 
         // Assert that a snapshot called "third" is present
         try {
-            zfs::Snapshot snap = dataset_in_b.openSnapshot("third");
+            auto snap = dataset_in_b.value().openSnapshot("third");
         } catch (std::exception &e) {
             std::cout << e.what() << std::endl;
             return -1;

@@ -1,16 +1,22 @@
-#include "core.hpp"
+#include "zfsutils/dataset.hpp"
+#include "zfsutils/pool.hpp"
+
 #include "testutils.hpp"
 
 #include <exception>
 #include <fcntl.h>
 #include <filesystem>
+#include <iostream>
 
 int main() {
     try {
-        zfs::Pool testpool_A = zfs::ZFS::getPoolByName("zfsutils_testpool_A");
-        zfs::Dataset testDataset = testpool_A.openDataset("testDataset");
+        zfsutils::Pool testpool_A = zfsutils::Pool::open("zfsutils_testpool_A");
+        std::optional<zfsutils::Dataset> testDataset =
+            testpool_A.openDataset("testDataset");
 
-        testDataset.createSnapshot("initial");
+        assert(testDataset.has_value());
+
+        testDataset->createSnapshot("initial");
 
         std::array<std::string, 10> snapshotNames{
             "first", "second",  "third", "fourth", "fifth",
@@ -18,17 +24,17 @@ int main() {
 
         for (std::string &snapshotName : snapshotNames) {
             testutils::write_string_to_file(
-                testDataset.getMountpoint(), snapshotName + "_testfile.txt",
+                testDataset->getMountpoint(), snapshotName + "_testfile.txt",
                 "Hello! This is some text for snapshot '" + snapshotName +
                     "'\n");
-            zfs::Snapshot snap = testDataset.createSnapshot(snapshotName);
+            zfsutils::Snapshot snap = testDataset->createSnapshot(snapshotName);
         }
 
-        for (zfs::Snapshot &snap : testDataset.get_snapshots()) {
+        for (zfsutils::Snapshot &snap : testDataset->getSnapshots()) {
             std::cout << "Contents in '" + snap.name() + "':" << std::endl;
 
             std::string snapshot_mountpoint =
-                testDataset.getMountpoint() + "/.zfs/snapshot/" + snap.name();
+                testDataset->getMountpoint() + "/.zfs/snapshot/" + snap.name();
 
             // Just print out all files
             for (const auto &entry :
