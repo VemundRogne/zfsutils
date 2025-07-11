@@ -27,7 +27,9 @@ std::vector<Pool> Pool::getPools() {
     return pools;
 }
 
-std::string Pool::name() { return std::string{zpool_get_name(getHandle())}; };
+std::string Pool::name() const {
+    return std::string{zpool_get_name(getHandle())};
+};
 
 Dataset Pool::createDataset(std::string name) {
     return Dataset::create(this->name() + "/" + name);
