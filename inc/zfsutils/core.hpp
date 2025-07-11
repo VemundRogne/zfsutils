@@ -17,21 +17,16 @@ template <typename T, void (*closer)(T *handle)> class HandleHelper {
   public:
     HandleHelper(T *raw_handle) : handle{raw_handle, closer} {};
 
-    bool hasHandle() {
-        if (handle) {
-            return true;
-        }
-        return false;
-    }
+    bool hasHandle() const { return static_cast<bool>(handle); }
 
-    void assertHandle() {
+    void assertHandle() const {
         if (!handle) {
             throw std::logic_error(
                 "zfsutils::internal::rawHandle assertHandle failed!");
         }
     }
 
-    T *getHandle() {
+    T *getHandle() const {
         assertHandle();
         return handle.get();
     }
