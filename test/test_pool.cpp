@@ -18,4 +18,10 @@ int main() {
         std::cerr << e.what() << std::endl;
         return -1;
     }
+
+    auto pools = zfsutils::Pool::getPools();
+    std::cout << "Got " << pools.size() << " pools:" << std::endl;
+    for (auto &pool : pools) {
+        std::cout << "  " << pool.name() << std::endl;
+    }
 }

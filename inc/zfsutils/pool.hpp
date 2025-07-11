@@ -20,6 +20,8 @@ class Pool : private internal::HandleHelper<zpool_handle_t, zpool_close> {
     using Base::getHandle;
 
     static Pool open(std::string name);
+    static std::vector<Pool> getPools();
+
     std::string name();
 
     Dataset createDataset(std::string name);
