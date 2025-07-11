@@ -15,7 +15,7 @@ template <typename T, void (*closer)(T *handle)> class HandleHelper {
     std::unique_ptr<T, decltype(closer)> handle;
 
   public:
-    HandleHelper<T, closer>(T *raw_handle) : handle{raw_handle, closer} {};
+    HandleHelper(T *raw_handle) : handle{raw_handle, closer} {};
 
     bool hasHandle() {
         if (handle) {
