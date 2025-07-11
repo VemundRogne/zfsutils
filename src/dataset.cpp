@@ -61,7 +61,7 @@ std::optional<Snapshot> Dataset::openSnapshot(std::string name) {
 std::vector<Snapshot> Dataset::getSnapshots() {
     std::vector<Snapshot> snapshots;
 
-    internal::IterHelper iterHelper;
+    internal::IterHelper<zfs_handle_t> iterHelper;
     iterHelper.callback = [&snapshots](zfs_handle_t *zh) -> int {
         snapshots.push_back(Snapshot{zh});
         // Note that zfs_iter_snapshots_sorted_v2 does not care about this

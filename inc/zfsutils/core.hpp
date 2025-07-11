@@ -15,23 +15,18 @@ template <typename T, void (*closer)(T *handle)> class HandleHelper {
     std::unique_ptr<T, decltype(closer)> handle;
 
   public:
-    HandleHelper<T, closer>(T *raw_handle) : handle{raw_handle, closer} {};
+    HandleHelper(T *raw_handle) : handle{raw_handle, closer} {};
 
-    bool hasHandle() {
-        if (handle) {
-            return true;
-        }
-        return false;
-    }
+    bool hasHandle() const { return static_cast<bool>(handle); }
 
-    void assertHandle() {
+    void assertHandle() const {
         if (!handle) {
             throw std::logic_error(
                 "zfsutils::internal::rawHandle assertHandle failed!");
         }
     }
 
-    T *getHandle() {
+    T *getHandle() const {
         assertHandle();
         return handle.get();
     }
@@ -79,7 +74,7 @@ class LibzfsHandle {
  * The solution is to use the (void* data) context variable in the zfs_iterators
  *
  * General usage:
- *  IterHelper iterHelper;
+ *  IterHelper<zfs_handle_t> iterHelper;
  *  iterHelper.callback = [&some_captured_variable](zfs_handle_t *zh) -> int {
  *      // do something
  *      // Either close or keep zfs_handle_t
@@ -88,12 +83,12 @@ class LibzfsHandle {
  *  zfs_iter_filesystems_v2(some_zfs_handle_t, 0, iterHelper.zfs_callback,
  *                          &iterhelper);
  */
-class IterHelper {
+template <typename T> class IterHelper {
   public:
     // This is the callback that zfs should use.
     // It converts the context passed through the iterator into the instance of
     // the IterHelper and then calls its registered callback
-    static int zfs_callback(zfs_handle_t *zh, void *context) {
+    static int zfs_callback(T *zh, void *context) {
         auto *self = static_cast<IterHelper *>(context);
         if (self->callback) {
             return self->callback(zh);
@@ -105,7 +100,7 @@ class IterHelper {
 
     // And this is the callback back to my context (typically a lambda in a
     // class)
-    std::function<int(zfs_handle_t *zh)> callback;
+    std::function<int(T *zh)> callback;
 };
 
 } // namespace internal
