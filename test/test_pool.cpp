@@ -22,15 +22,6 @@ int main() {
         return -1;
     }
 
-    // Try to iterate top-level datasets:
-    zfsutils::internal::IterHelper<zfs_handle_t> iterHelper;
-    iterHelper.callback = [](zfs_handle_t *zh) -> int {
-        std::cout << std::string{zfs_get_name(zh)} << std::endl;
-        return 0;
-    };
-    zfs_iter_root(zfsutils::internal::LibzfsHandle::Handle(),
-                  iterHelper.zfs_callback, &iterHelper);
-
     auto pools = zfsutils::Pool::getPools();
 
     auto pool_in_vector = [](const std::vector<zfsutils::Pool> &pools,
