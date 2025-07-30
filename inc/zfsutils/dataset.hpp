@@ -21,6 +21,8 @@ class Dataset : private internal::HandleHelper<zfs_handle_t, zfs_close> {
 
     std::string name();
 
+    static std::vector<Dataset> getTopLevelDatasets();
+
     static std::optional<Dataset> open(std::string path);
     static Dataset create(std::string path);
 

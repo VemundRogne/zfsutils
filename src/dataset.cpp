@@ -13,6 +13,21 @@ std::optional<Dataset> Dataset::open(std::string path) {
     return Dataset{zh};
 }
 
+std::vector<Dataset> Dataset::getTopLevelDatasets() {
+    std::vector<Dataset> datasets;
+
+    zfsutils::internal::IterHelper<zfs_handle_t> iterHelper;
+    iterHelper.callback = [&datasets](zfs_handle_t *zh) -> int {
+        datasets.push_back(Dataset{zh});
+        return 0;
+    };
+
+    zfs_iter_root(zfsutils::internal::LibzfsHandle::Handle(),
+                  iterHelper.zfs_callback, &iterHelper);
+
+    return datasets;
+}
+
 Dataset Dataset::create(std::string path) {
     nvlist_t *props;
     nvlist_alloc(&props, NV_UNIQUE_NAME, 0);
