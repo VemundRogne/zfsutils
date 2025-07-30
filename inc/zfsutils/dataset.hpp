@@ -6,6 +6,20 @@
 #include <optional>
 
 namespace zfsutils {
+enum DatasetProperty {
+    type,
+    creation,
+    used,
+    available,
+    referenced,
+    compressratio,
+    mounted,
+    origin,
+    quota
+};
+}
+
+namespace zfsutils {
 
 class Dataset : private internal::HandleHelper<zfs_handle_t, zfs_close> {
     using Base = internal::HandleHelper<zfs_handle_t, zfs_close>;
@@ -33,6 +47,8 @@ class Dataset : private internal::HandleHelper<zfs_handle_t, zfs_close> {
     std::optional<Snapshot> openSnapshot(std::string name);
 
     std::vector<Snapshot> getSnapshots();
+
+    std::string getProp(zfsutils::DatasetProperty property);
 };
 
 } // namespace zfsutils

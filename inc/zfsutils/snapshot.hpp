@@ -24,6 +24,14 @@ class Snapshot : private internal::HandleHelper<zfs_handle_t, zfs_close> {
 
     std::string fullName();
     std::string name();
+
+    /* TODO: Implement properties for Snapshots.
+     * I believe Snapshots and Datasets have so much in common that it makes
+     * sense to have some inheritance for the properties.
+     *
+     * Anyway the enum-solution I have now namespace to zfsutils. This does not
+     * work for both dataset and snapshot because they have the same properites
+     */
 };
 
 } // namespace zfsutils

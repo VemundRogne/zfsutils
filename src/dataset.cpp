@@ -4,6 +4,54 @@ namespace zfsutils {
 
 std::string Dataset::name() { return std::string{zfs_get_name(getHandle())}; }
 
+std::string Dataset::getProp(zfsutils::DatasetProperty property) {
+    char buffer[512]{0};
+
+    zfs_prop_t prop;
+
+    switch (property) {
+    case zfsutils::DatasetProperty::type:
+        prop = ZFS_PROP_TYPE;
+        break;
+
+    case zfsutils::DatasetProperty::creation:
+        prop = ZFS_PROP_CREATION;
+        break;
+
+    case zfsutils::DatasetProperty::used:
+        prop = ZFS_PROP_USED;
+        break;
+
+    case zfsutils::DatasetProperty::available:
+        prop = ZFS_PROP_AVAILABLE;
+        break;
+
+    case zfsutils::DatasetProperty::referenced:
+        prop = ZFS_PROP_REFERENCED;
+        break;
+
+    case zfsutils::DatasetProperty::compressratio:
+        prop = ZFS_PROP_COMPRESSRATIO;
+        break;
+
+    case zfsutils::DatasetProperty::mounted:
+        prop = ZFS_PROP_MOUNTED;
+        break;
+
+    case zfsutils::DatasetProperty::origin:
+        prop = ZFS_PROP_ORIGIN;
+        break;
+
+    case zfsutils::DatasetProperty::quota:
+        prop = ZFS_PROP_QUOTA;
+        break;
+    }
+
+    zfs_prop_get(getHandle(), prop, &buffer[0], sizeof(buffer), NULL, 0, 0,
+                 B_FALSE);
+    return std::string{buffer};
+}
+
 std::optional<Dataset> Dataset::open(std::string path) {
     zfs_handle_t *zh = zfs_open(internal::LibzfsHandle::Handle(), path.c_str(),
                                 ZFS_TYPE_FILESYSTEM);
