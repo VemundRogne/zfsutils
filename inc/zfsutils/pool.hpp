@@ -7,6 +7,17 @@
 
 namespace zfsutils {
 
+enum PoolProperty {
+    size,
+    capacity,
+    altroot,
+    health,
+    version,
+    free,
+    allocated,
+    fragmentation
+};
+
 class Pool : private internal::HandleHelper<zpool_handle_t, zpool_close> {
     using Base = internal::HandleHelper<zpool_handle_t, zpool_close>;
 
@@ -26,6 +37,8 @@ class Pool : private internal::HandleHelper<zpool_handle_t, zpool_close> {
 
     Dataset createDataset(std::string name);
     std::optional<Dataset> openDataset(std::string name);
+
+    std::string getProp(PoolProperty property) const;
 };
 
 } // namespace zfsutils

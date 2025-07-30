@@ -13,6 +13,12 @@ int main() {
         zfsutils::Pool testpool_A = zfsutils::Pool::open("zfsutils_testpool_A");
         assert(testpool_A.name() == "zfsutils_testpool_A");
 
+        std::cout << testpool_A.name() << " size: "
+                  << testpool_A.getProp(zfsutils::PoolProperty::size)
+                  << std::endl;
+
+        assert(testpool_A.getProp(zfsutils::PoolProperty::health) == "ONLINE");
+
         assert(testpool_A.hasHandle() == true);
         usePool(std::move(testpool_A));
         assert(testpool_A.hasHandle() == false);
