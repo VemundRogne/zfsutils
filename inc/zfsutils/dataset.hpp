@@ -33,7 +33,7 @@ class Dataset : private internal::HandleHelper<zfs_handle_t, zfs_close> {
     /* Escape-hatch */
     using Base::getHandle;
 
-    std::string name();
+    std::string name() const;
 
     static std::vector<Dataset> getTopLevelDatasets();
 

@@ -2,7 +2,9 @@
 
 namespace zfsutils {
 
-std::string Dataset::name() { return std::string{zfs_get_name(getHandle())}; }
+std::string Dataset::name() const {
+    return std::string{zfs_get_name(getHandle())};
+}
 
 std::string Dataset::getProp(zfsutils::DatasetProperty property) {
     char buffer[512]{0};
