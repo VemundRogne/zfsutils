@@ -22,8 +22,8 @@ class Snapshot : private internal::HandleHelper<zfs_handle_t, zfs_close> {
     static std::optional<Snapshot> open(std::string fullpath);
     static Snapshot create(std::string fullpath);
 
-    std::string fullName();
-    std::string name();
+    std::string fullName() const;
+    std::string name() const;
 
     /* TODO: Implement properties for Snapshots.
      * I believe Snapshots and Datasets have so much in common that it makes
