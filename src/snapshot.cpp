@@ -4,11 +4,11 @@
 
 namespace zfsutils {
 
-std::string Snapshot::fullName() {
+std::string Snapshot::fullName() const {
     return std::string{zfs_get_name(getHandle())};
 }
 
-std::string Snapshot::name() {
+std::string Snapshot::name() const {
     std::string fullName = this->fullName();
 
     size_t delim_pos = fullName.find("@");
