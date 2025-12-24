@@ -102,11 +102,12 @@ target_link_libraries(test_create_snapshots.exe PUBLIC zfsutils testutils)
 
 add_test(NAME test_create_snapshots COMMAND test_create_snapshots.exe)
 set_tests_properties(test_create_snapshots PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
+set_tests_properties(test_create_snapshots PROPERTIES FIXTURES_SETUP pool_A_testSnapshots)
 
 # We add a test that should send snapshots from pool_a to pool_b
 add_executable(test_send_snapshots.exe ./test/test_send_snapshots.cpp)
 target_link_libraries(test_send_snapshots.exe PUBLIC zfsutils)
 
 add_test(NAME test_send_snapshots COMMAND test_send_snapshots.exe)
-set_tests_properties(test_send_snapshots PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
+set_tests_properties(test_send_snapshots PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools;pool_A_testSnapshots") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
 
