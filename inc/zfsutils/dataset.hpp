@@ -5,6 +5,15 @@
 
 #include <optional>
 
+namespace interface {
+class IDataset {
+  public:
+    virtual std::string name() const = 0;
+    virtual std::vector<std::shared_ptr<interface::ISnapshot>>
+    getVirtSnap() = 0;
+};
+} // namespace interface
+
 namespace zfsutils {
 enum DatasetProperty {
     type,
@@ -21,7 +30,8 @@ enum DatasetProperty {
 
 namespace zfsutils {
 
-class Dataset : private internal::HandleHelper<zfs_handle_t, zfs_close> {
+class Dataset : public interface::IDataset,
+                private internal::HandleHelper<zfs_handle_t, zfs_close> {
     using Base = internal::HandleHelper<zfs_handle_t, zfs_close>;
 
   private:
@@ -33,7 +43,7 @@ class Dataset : private internal::HandleHelper<zfs_handle_t, zfs_close> {
     /* Escape-hatch */
     using Base::getHandle;
 
-    std::string name() const;
+    std::string name() const override;
 
     static std::vector<Dataset> getTopLevelDatasets();
 
@@ -45,6 +55,8 @@ class Dataset : private internal::HandleHelper<zfs_handle_t, zfs_close> {
 
     Snapshot createSnapshot(std::string name);
     std::optional<Snapshot> openSnapshot(std::string name);
+
+    std::vector<std::shared_ptr<interface::ISnapshot>> getVirtSnap() override;
 
     std::vector<Snapshot> getSnapshots();
 

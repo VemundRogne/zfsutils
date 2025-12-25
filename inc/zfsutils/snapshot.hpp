@@ -4,9 +4,17 @@
 
 #include "zfsutils/core.hpp"
 
+namespace interface {
+class ISnapshot {
+  public:
+    virtual std::string name() const = 0;
+};
+} // namespace interface
+
 namespace zfsutils {
 
-class Snapshot : private internal::HandleHelper<zfs_handle_t, zfs_close> {
+class Snapshot : public interface::ISnapshot,
+                 private internal::HandleHelper<zfs_handle_t, zfs_close> {
     using Base = internal::HandleHelper<zfs_handle_t, zfs_close>;
     friend class Dataset;
 

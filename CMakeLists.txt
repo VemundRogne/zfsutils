@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/CPM.cmake)
 
@@ -31,6 +32,7 @@ add_custom_target(zfsbuild
 add_library(zfsutils ./src/pool.cpp ./src/dataset.cpp ./src/snapshot.cpp)
 target_include_directories(zfsutils PUBLIC ./inc)
 add_dependencies(zfsutils zfsbuild)
+target_include_directories(zfsutils PUBLIC ./interface/inc)
 
 
 # Link to ZFS
@@ -112,3 +114,48 @@ target_link_libraries(test_send_snapshots.exe PUBLIC zfsutils)
 add_test(NAME test_send_snapshots COMMAND test_send_snapshots.exe)
 set_tests_properties(test_send_snapshots PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools;pool_A_testSnapshots") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
 
+
+add_executable(test_compare_states.exe ./test/test_compare_states.cpp)
+target_link_libraries(test_compare_states.exe PUBLIC zfsutils)
+
+add_test(NAME test_compare_states COMMAND test_compare_states.exe)
+set_tests_properties(test_compare_states PROPERTIES FIXTURES_REQUIRED "pool_A_testDataset;testpools") # Hmm... I do not love that I have to specify "testpools" as a required fixture here!
+
+set(ENABLE_GRPC_TEST ON)
+if(ENABLE_GRPC_TEST)
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{HOME}/.local")
+    find_package(Protobuf CONFIG REQUIRED)
+    find_package(gRPC CONFIG REQUIRED)
+
+    add_custom_command(
+        COMMENT "Building protocols"
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pool.pb.cc ${CMAKE_CURRENT_BINARY_DIR}/pool.grpc.pb.cc
+        COMMAND $<TARGET_FILE:protobuf::protoc> 
+            "${CMAKE_CURRENT_SOURCE_DIR}/protos/pool.proto"
+            "--grpc_out=${CMAKE_CURRENT_BINARY_DIR}"
+            "--plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
+            "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/protos"
+        COMMAND $<TARGET_FILE:protobuf::protoc>
+            "${CMAKE_CURRENT_SOURCE_DIR}/protos/pool.proto"
+            "--cpp_out=${CMAKE_CURRENT_BINARY_DIR}"
+            "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/protos"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/protos/pool.proto
+    )
+
+    add_library(pool_proto
+        ./pool.pb.cc
+        ./pool.grpc.pb.cc
+    )
+
+    target_include_directories(pool_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+    target_link_libraries(pool_proto PUBLIC gRPC::grpc++)
+
+    add_executable(test_pool_info.exe ./test/test_pool_info.cpp)
+    target_link_libraries(test_pool_info.exe PUBLIC zfsutils)
+    target_link_libraries(test_pool_info.exe PUBLIC pool_proto)
+
+    add_executable(test_pool_info_server.exe ./test/test_pool_info_server.cpp)
+    target_link_libraries(test_pool_info_server.exe PUBLIC zfsutils)
+    target_link_libraries(test_pool_info_server.exe PUBLIC pool_proto)
+endif()

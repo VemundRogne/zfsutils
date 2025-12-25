@@ -8,18 +8,25 @@ void usePool(zfsutils::Pool pool) {
     std::cout << "I have pool: " << pool.name() << std::endl;
 }
 
+void usePoolInterface(zfsutils::interface::IPool &pool) {
+    std::cout << "I have interface to pool: " << pool.name() << std::endl;
+}
+
 int main() {
+
     try {
         zfsutils::Pool testpool_A = zfsutils::Pool::open("zfsutils_testpool_A");
         assert(testpool_A.name() == "zfsutils_testpool_A");
 
         std::cout << testpool_A.name() << " size: "
-                  << testpool_A.getProp(zfsutils::PoolProperty::size)
+                  << testpool_A.getProp(zfsutils::interface::PoolProperty::size)
                   << std::endl;
 
-        assert(testpool_A.getProp(zfsutils::PoolProperty::health) == "ONLINE");
+        assert(testpool_A.getProp(zfsutils::interface::PoolProperty::health) ==
+               "ONLINE");
 
         assert(testpool_A.hasHandle() == true);
+        usePoolInterface(testpool_A);
         usePool(std::move(testpool_A));
         assert(testpool_A.hasHandle() == false);
 

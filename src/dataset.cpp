@@ -1,4 +1,5 @@
 #include "zfsutils/dataset.hpp"
+#include "zfsutils/snapshot.hpp"
 
 namespace zfsutils {
 
@@ -140,6 +141,15 @@ std::vector<Snapshot> Dataset::getSnapshots() {
                                  &iterHelper, 0, 0);
 
     return snapshots;
+}
+
+std::vector<std::shared_ptr<interface::ISnapshot>> Dataset::getVirtSnap() {
+    std::vector<Snapshot> snaps = getSnapshots();
+    std::vector<std::shared_ptr<interface::ISnapshot>> shared_snaps;
+    for (auto &snap : snaps) {
+        shared_snaps.push_back(std::make_shared<Snapshot>(std::move(snap)));
+    }
+    return shared_snaps;
 }
 
 } // namespace zfsutils

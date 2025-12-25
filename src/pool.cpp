@@ -31,41 +31,41 @@ std::string Pool::name() const {
     return std::string{zpool_get_name(getHandle())};
 };
 
-std::string Pool::getProp(PoolProperty property) const {
+std::string Pool::getProp(interface::PoolProperty property) const {
     char buffer[512]{0};
 
     zpool_prop_t prop;
 
     switch (property) {
-    case zfsutils::PoolProperty::size:
+    case zfsutils::interface::PoolProperty::size:
         prop = ZPOOL_PROP_SIZE;
         break;
 
-    case zfsutils::PoolProperty::capacity:
+    case zfsutils::interface::PoolProperty::capacity:
         prop = ZPOOL_PROP_CAPACITY;
         break;
 
-    case zfsutils::PoolProperty::altroot:
+    case zfsutils::interface::PoolProperty::altroot:
         prop = ZPOOL_PROP_ALTROOT;
         break;
 
-    case zfsutils::PoolProperty::health:
+    case zfsutils::interface::PoolProperty::health:
         prop = ZPOOL_PROP_HEALTH;
         break;
 
-    case zfsutils::PoolProperty::version:
+    case zfsutils::interface::PoolProperty::version:
         prop = ZPOOL_PROP_VERSION;
         break;
 
-    case zfsutils::PoolProperty::free:
+    case zfsutils::interface::PoolProperty::free:
         prop = ZPOOL_PROP_FREE;
         break;
 
-    case zfsutils::PoolProperty::allocated:
+    case zfsutils::interface::PoolProperty::allocated:
         prop = ZPOOL_PROP_ALLOCATED;
         break;
 
-    case zfsutils::PoolProperty::fragmentation:
+    case zfsutils::interface::PoolProperty::fragmentation:
         prop = ZPOOL_PROP_FRAGMENTATION;
         break;
     }
