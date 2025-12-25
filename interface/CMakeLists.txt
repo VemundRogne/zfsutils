@@ -1,0 +1,2 @@
+add_library(zfsutils_interface INTERFACE)
+target_include_directories(zfsutils_interface INTERFACE ${CMAKE_CURRENT_LIST_DIR}/inc)
