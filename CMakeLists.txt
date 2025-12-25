@@ -8,8 +8,8 @@ enable_testing()
 
 CPMAddPackage(
     NAME zfs
-    GIT_REPOSITORY https://github.com/openzfs/zfs.git
-    GIT_TAG zfs-2.2.6
+    GIT_REPOSITORY ssh://desktopserver/home/vemund/git/zfs.git
+    GIT_TAG zfs-2.3.4-grpc-compatible
     DOWNLOAD_ONLY
 )
 
