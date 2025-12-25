@@ -13,23 +13,24 @@ CPMAddPackage(
     DOWNLOAD_ONLY
 )
 
-execute_process(
+project(zfsutils CXX)
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/zfsbuilt
+    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
     COMMAND "./autogen.sh"
-    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
-)
-execute_process(
     COMMAND "./configure"
-    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
-)
-execute_process(
     COMMAND "make"
-    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E echo "built" > ${CMAKE_CURRENT_BINARY_DIR}/zfsbuilt
 )
 
-project(zfsutils CXX)
+add_custom_target(zfsbuild
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zfsbuilt
+)
 
 add_library(zfsutils ./src/pool.cpp ./src/dataset.cpp ./src/snapshot.cpp)
 target_include_directories(zfsutils PUBLIC ./inc)
+add_dependencies(zfsutils zfsbuild)
 
 
 # Link to ZFS
