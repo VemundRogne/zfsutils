@@ -39,10 +39,9 @@ class PoolInterfaceClient {
 
 class RemotePool : public zfsutils::interface::IPool {
   public:
-    RemotePool(std::shared_ptr<PoolInterfaceClient> poolInterfaceClient,
-               std::string name, std::string hostname)
-        : poolInterfaceClient{poolInterfaceClient}, name_{name},
-          hostname_{hostname} {}
+    RemotePool(std::shared_ptr<grpc::Channel> channel, std::string name,
+               std::string hostname)
+        : poolInterfaceClient{channel}, name_{name}, hostname_{hostname} {}
 
     std::string name() const override { return name_; }
     std::string getHostname() const override { return hostname_; }
@@ -52,7 +51,7 @@ class RemotePool : public zfsutils::interface::IPool {
     }
 
   private:
-    std::shared_ptr<PoolInterfaceClient> poolInterfaceClient;
+    PoolInterfaceClient poolInterfaceClient;
 
     std::string name_;
     std::string hostname_;

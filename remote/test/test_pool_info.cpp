@@ -21,14 +21,15 @@ int main() {
 
     std::cout << "gRPC pools: " << std::endl;
 
-    auto client = std::make_shared<PoolInterfaceClient>(
-        PoolInterfaceClient{grpc::CreateChannel(
-            "localhost:50000", grpc::InsecureChannelCredentials())});
+    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(
+        "localhost:50000", grpc::InsecureChannelCredentials());
+
+    auto baseClient = PoolInterfaceClient{channel};
 
     std::vector<RemotePool> remotePools;
 
-    for (auto &pool : client->ListPools()) {
-        remotePools.push_back(RemotePool{client, pool.name, "someRemote"});
+    for (auto &pool : baseClient.ListPools()) {
+        remotePools.push_back(RemotePool{channel, pool.name, "someRemote"});
     }
 
     for (auto &pool : remotePools) {
@@ -41,7 +42,7 @@ int main() {
     std::vector<std::shared_ptr<zfsutils::interface::IPool>> mixedPools{};
     mixedPools.push_back(myPoolShared);
     std::shared_ptr<RemotePool> myRemotePoolShared =
-        std::make_shared<RemotePool>(remotePools[0]);
+        std::make_shared<RemotePool>(std::move(remotePools[0]));
     mixedPools.push_back(myRemotePoolShared);
 
     std::cout << "name: " << mixedPools[0]->name() << std::endl;
