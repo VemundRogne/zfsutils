@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package remotezfs.v1;
+
 service PoolInterface {
     rpc ListPools(ListPoolsRequest) returns (stream Pool) {}
     rpc getPoolProperty(PoolPropertyRequest) returns (PoolProperty) {}

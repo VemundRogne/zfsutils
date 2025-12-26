@@ -8,15 +8,16 @@
 #include "pool.grpc.pb.h"
 #include "pool.pb.h"
 
-class PoolInterfaceServiceImpl final : public PoolInterface::Service {
+class PoolInterfaceServiceImpl final
+    : public remotezfs::v1::PoolInterface::Service {
     grpc::Status ListPools(grpc::ServerContext *context,
-                           const ListPoolsRequest *request,
-                           grpc::ServerWriter<Pool> *writer) {
+                           const remotezfs::v1::ListPoolsRequest *request,
+                           grpc::ServerWriter<remotezfs::v1::Pool> *writer) {
         std::cout << "ListPools called" << std::endl;
 
         std::vector<zfsutils::Pool> pools = zfsutils::Pool::getPools();
 
-        Pool reply;
+        remotezfs::v1::Pool reply;
         for (auto &pool : pools) {
             reply.set_name(pool.name());
             reply.set_hostname(pool.getHostname());

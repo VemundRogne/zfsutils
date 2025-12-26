@@ -9,59 +9,7 @@
 
 #include "zfsutils/pool.hpp"
 
-struct RemotePoolInfo {
-    std::string name;
-    std::string hostname;
-};
-
-class PoolInterfaceClient {
-  public:
-    PoolInterfaceClient(std::shared_ptr<grpc::Channel> channel)
-        : stub_(PoolInterface::NewStub(channel)) {}
-
-    std::vector<RemotePoolInfo> ListPools() {
-        ListPoolsRequest request;
-        request.set_nmax(0);
-
-        Pool reply;
-
-        grpc::ClientContext context;
-        std::unique_ptr<grpc::ClientReader<Pool>> reader(
-            stub_->ListPools(&context, request));
-
-        std::vector<RemotePoolInfo> remotePools;
-
-        while (reader->Read(&reply)) {
-            remotePools.push_back(
-                RemotePoolInfo{reply.name(), reply.hostname()});
-        }
-        return remotePools;
-    }
-
-  private:
-    std::unique_ptr<PoolInterface::Stub> stub_;
-};
-
-class RemotePool : public zfsutils::interface::IPool {
-  public:
-    RemotePool(std::shared_ptr<PoolInterfaceClient> poolInterfaceClient,
-               std::string name, std::string hostname)
-        : poolInterfaceClient{poolInterfaceClient}, name_{name},
-          hostname_{hostname} {}
-
-    std::string name() const override { return name_; }
-    std::string getHostname() const override { return hostname_; }
-    std::string
-    getProp(zfsutils::interface::PoolProperty property) const override {
-        return "NOT IMPLEMENTED";
-    }
-
-  private:
-    std::shared_ptr<PoolInterfaceClient> poolInterfaceClient;
-
-    std::string name_;
-    std::string hostname_;
-};
+#include "zfsutils/remote/pool.hpp"
 
 void printPoolInfo(zfsutils::interface::IPool &pool) {
     std::cout << " --- POOL --- " << std::endl;
@@ -76,6 +24,8 @@ void printPoolInfo(zfsutils::interface::IPool &pool) {
 }
 
 int main() {
+    using namespace zfsutils::remote;
+
     std::cout << "Local pools: " << std::endl;
     for (auto &pool : zfsutils::Pool::getPools()) {
         printPoolInfo(pool);

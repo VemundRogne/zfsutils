@@ -37,9 +37,15 @@ add_library(pool_proto
 target_include_directories(pool_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(pool_proto PUBLIC gRPC::grpc++)
 
+add_library(zfsutils_remote ./src/pool.cpp)
+target_include_directories(zfsutils_remote PUBLIC ${CMAKE_CURRENT_LIST_DIR}/inc)
+target_link_libraries(zfsutils_remote PUBLIC zfsutils_interface)
+target_link_libraries(zfsutils_remote PUBLIC pool_proto)
+
 add_executable(test_pool_info.exe ./test/test_pool_info.cpp)
 target_link_libraries(test_pool_info.exe PUBLIC zfsutils)
 target_link_libraries(test_pool_info.exe PUBLIC pool_proto)
+target_link_libraries(test_pool_info.exe PUBLIC zfsutils_remote)
 
 add_executable(test_pool_info_server.exe ./test/test_pool_info_server.cpp)
 target_link_libraries(test_pool_info_server.exe PUBLIC zfsutils)
