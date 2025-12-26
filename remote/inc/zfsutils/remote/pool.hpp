@@ -10,7 +10,6 @@ namespace remote {
 
 struct RemotePoolInfo {
     std::string name;
-    std::string hostname;
 };
 
 class PoolInterfaceClient {
@@ -21,17 +20,15 @@ class PoolInterfaceClient {
     std::vector<RemotePoolInfo> ListPools() {
         remotezfs::v1::ListPoolsRequest request;
 
-        remotezfs::v1::Pool reply;
+        remotezfs::v1::ListPoolsReply reply;
 
         grpc::ClientContext context;
-        std::unique_ptr<grpc::ClientReader<remotezfs::v1::Pool>> reader(
-            stub_->ListPools(&context, request));
+        stub_->ListPools(&context, request, &reply);
 
         std::vector<RemotePoolInfo> remotePools;
 
-        while (reader->Read(&reply)) {
-            remotePools.push_back(
-                RemotePoolInfo{reply.name(), reply.hostname()});
+        for (auto &pool : reply.pools()) {
+            remotePools.push_back(RemotePoolInfo{pool.name()});
         }
         return remotePools;
     }

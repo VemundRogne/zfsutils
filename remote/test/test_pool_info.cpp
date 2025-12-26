@@ -27,9 +27,8 @@ int main() {
 
     std::vector<RemotePool> remotePools;
 
-    auto poolInfo = client->ListPools();
-    for (auto &pool : poolInfo) {
-        remotePools.push_back(RemotePool{client, pool.name, pool.hostname});
+    for (auto &pool : client->ListPools()) {
+        remotePools.push_back(RemotePool{client, pool.name, "someRemote"});
     }
 
     for (auto &pool : remotePools) {

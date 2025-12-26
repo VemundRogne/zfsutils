@@ -12,16 +12,14 @@ class PoolInterfaceServiceImpl final
     : public remotezfs::v1::PoolInterface::Service {
     grpc::Status ListPools(grpc::ServerContext *context,
                            const remotezfs::v1::ListPoolsRequest *request,
-                           grpc::ServerWriter<remotezfs::v1::Pool> *writer) {
+                           remotezfs::v1::ListPoolsReply *reply) {
         std::cout << "ListPools called" << std::endl;
 
-        std::vector<zfsutils::Pool> pools = zfsutils::Pool::getPools();
+        std::vector<zfsutils::Pool> localPools = zfsutils::Pool::getPools();
 
-        remotezfs::v1::Pool reply;
-        for (auto &pool : pools) {
-            reply.set_name(pool.name());
-            reply.set_hostname(pool.getHostname());
-            writer->Write(reply);
+        for (auto &localPool : localPools) {
+            auto *pool = reply->add_pools();
+            pool->set_name(localPool.name());
         }
 
         return grpc::Status::OK;
