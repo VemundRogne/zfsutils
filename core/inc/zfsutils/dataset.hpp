@@ -1,36 +1,14 @@
 #pragma once
 
 #include "zfsutils/core.hpp"
+#include "zfsutils/interface/dataset.hpp"
 #include "zfsutils/snapshot.hpp"
 
 #include <optional>
 
-namespace interface {
-class IDataset {
-  public:
-    virtual std::string name() const = 0;
-    virtual std::vector<std::shared_ptr<interface::ISnapshot>>
-    getVirtSnap() = 0;
-};
-} // namespace interface
-
-namespace zfsutils {
-enum DatasetProperty {
-    type,
-    creation,
-    used,
-    available,
-    referenced,
-    compressratio,
-    mounted,
-    origin,
-    quota
-};
-}
-
 namespace zfsutils {
 
-class Dataset : public interface::IDataset,
+class Dataset : public zfsutils::interface::IDataset,
                 private internal::HandleHelper<zfs_handle_t, zfs_close> {
     using Base = internal::HandleHelper<zfs_handle_t, zfs_close>;
 
@@ -53,14 +31,12 @@ class Dataset : public interface::IDataset,
     void setMountpoint(std::string mountPoint);
     std::string getMountpoint();
 
-    Snapshot createSnapshot(std::string name);
-    std::optional<Snapshot> openSnapshot(std::string name);
+    zfsutils::Snapshot createSnapshot(std::string name);
+    std::optional<zfsutils::Snapshot> openSnapshot(std::string name);
 
-    std::vector<std::shared_ptr<interface::ISnapshot>> getVirtSnap() override;
+    std::vector<zfsutils::Snapshot> getSnapshots();
 
-    std::vector<Snapshot> getSnapshots();
-
-    std::string getProp(zfsutils::DatasetProperty property);
+    std::string getProp(zfsutils::interface::DatasetProperty property);
 };
 
 } // namespace zfsutils

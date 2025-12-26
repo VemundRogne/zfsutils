@@ -7,45 +7,45 @@ std::string Dataset::name() const {
     return std::string{zfs_get_name(getHandle())};
 }
 
-std::string Dataset::getProp(zfsutils::DatasetProperty property) {
+std::string Dataset::getProp(zfsutils::interface::DatasetProperty property) {
     char buffer[512]{0};
 
     zfs_prop_t prop;
 
     switch (property) {
-    case zfsutils::DatasetProperty::type:
+    case zfsutils::interface::DatasetProperty::type:
         prop = ZFS_PROP_TYPE;
         break;
 
-    case zfsutils::DatasetProperty::creation:
+    case zfsutils::interface::DatasetProperty::creation:
         prop = ZFS_PROP_CREATION;
         break;
 
-    case zfsutils::DatasetProperty::used:
+    case zfsutils::interface::DatasetProperty::used:
         prop = ZFS_PROP_USED;
         break;
 
-    case zfsutils::DatasetProperty::available:
+    case zfsutils::interface::DatasetProperty::available:
         prop = ZFS_PROP_AVAILABLE;
         break;
 
-    case zfsutils::DatasetProperty::referenced:
+    case zfsutils::interface::DatasetProperty::referenced:
         prop = ZFS_PROP_REFERENCED;
         break;
 
-    case zfsutils::DatasetProperty::compressratio:
+    case zfsutils::interface::DatasetProperty::compressratio:
         prop = ZFS_PROP_COMPRESSRATIO;
         break;
 
-    case zfsutils::DatasetProperty::mounted:
+    case zfsutils::interface::DatasetProperty::mounted:
         prop = ZFS_PROP_MOUNTED;
         break;
 
-    case zfsutils::DatasetProperty::origin:
+    case zfsutils::interface::DatasetProperty::origin:
         prop = ZFS_PROP_ORIGIN;
         break;
 
-    case zfsutils::DatasetProperty::quota:
+    case zfsutils::interface::DatasetProperty::quota:
         prop = ZFS_PROP_QUOTA;
         break;
     }
@@ -155,15 +155,6 @@ std::vector<Snapshot> Dataset::getSnapshots() {
                                  &iterHelper, 0, 0);
 
     return snapshots;
-}
-
-std::vector<std::shared_ptr<interface::ISnapshot>> Dataset::getVirtSnap() {
-    std::vector<Snapshot> snaps = getSnapshots();
-    std::vector<std::shared_ptr<interface::ISnapshot>> shared_snaps;
-    for (auto &snap : snaps) {
-        shared_snaps.push_back(std::make_shared<Snapshot>(std::move(snap)));
-    }
-    return shared_snaps;
 }
 
 } // namespace zfsutils

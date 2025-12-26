@@ -9,7 +9,7 @@
 
 #include "zfsutils/pool.hpp"
 
-#include "zfsutils/remote/pool.hpp"
+#include "zfsutils/interface/pool.hpp"
 
 int main() {
     using namespace zfsutils::remote;

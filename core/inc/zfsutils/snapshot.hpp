@@ -3,13 +3,7 @@
 #include <optional>
 
 #include "zfsutils/core.hpp"
-
-namespace interface {
-class ISnapshot {
-  public:
-    virtual std::string name() const = 0;
-};
-} // namespace interface
+#include "zfsutils/interface/snapshot.hpp"
 
 namespace zfsutils {
 
