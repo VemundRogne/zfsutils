@@ -34,10 +34,9 @@ class Dataset : public interface::IDataset,
                 private internal::HandleHelper<zfs_handle_t, zfs_close> {
     using Base = internal::HandleHelper<zfs_handle_t, zfs_close>;
 
-  private:
+  public:
     Dataset(zfs_handle_t *handle) : Base{handle} {}
 
-  public:
     using Base::hasHandle;
 
     /* Escape-hatch */
