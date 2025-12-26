@@ -45,6 +45,7 @@ class Dataset : public interface::IDataset,
     std::string name() const override;
 
     static std::vector<Dataset> getTopLevelDatasets();
+    std::vector<Dataset> getDatasets();
 
     static std::optional<Dataset> open(std::string path);
     static Dataset create(std::string path);
