@@ -5,7 +5,7 @@ package remotezfs.v1;
 service PoolInterface {
     rpc ListPools(ListPoolsRequest) returns (ListPoolsReply) {}
     rpc getPoolProperty(PoolPropertyRequest) returns (PoolPropertyReply) {}
-    rpc ListDatasets(ListDatasetsReply) returns (ListDatasetsReply) {}
+    rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsReply) {}
 };
 
 message ListPoolsRequest {}

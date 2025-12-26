@@ -34,6 +34,7 @@ int main() {
 
     for (auto &pool : remotePools) {
         pool.printPoolInfo();
+        baseClient.ListDatasets(pool);
     }
 
     zfsutils::Pool myPool = zfsutils::Pool::open("testpool");

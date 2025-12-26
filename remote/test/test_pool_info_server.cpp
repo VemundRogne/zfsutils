@@ -24,6 +24,19 @@ class PoolInterfaceServiceImpl final
 
         return grpc::Status::OK;
     }
+
+    grpc::Status ListDatasets(grpc::ServerContext *context,
+                              const remotezfs::v1::ListDatasetsRequest *request,
+                              remotezfs::v1::ListDatasetsReply *reply) {
+        auto targetTopLevelDataset =
+            zfsutils::Dataset::open(request->target_pool().name());
+
+        for (auto &dataset : targetTopLevelDataset->getDatasets()) {
+            reply->add_datasets()->set_name(dataset.name());
+        }
+
+        return grpc::Status::OK;
+    }
 };
 
 int main() {
