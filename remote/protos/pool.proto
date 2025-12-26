@@ -4,19 +4,18 @@ package remotezfs.v1;
 
 service PoolInterface {
     rpc ListPools(ListPoolsRequest) returns (stream Pool) {}
-    rpc getPoolProperty(PoolPropertyRequest) returns (PoolProperty) {}
+    rpc getPoolProperty(PoolPropertyRequest) returns (PoolPropertyReply) {}
 };
 
-message ListPoolsRequest { int32 nMax = 1; }
+message ListPoolsRequest {}
 
 message Pool {
     string name = 1;
     string hostname = 2;
 }
 
-message PoolProperty {
-    string name = 1;
-    string value = 2;
+message PoolPropertyReply {
+    string value = 1;
 }
 
 message PoolPropertyRequest {

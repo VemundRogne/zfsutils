@@ -11,24 +11,12 @@
 
 #include "zfsutils/remote/pool.hpp"
 
-void printPoolInfo(zfsutils::interface::IPool &pool) {
-    std::cout << " --- POOL --- " << std::endl;
-    std::cout << "  '" << pool.name() << "'on " << pool.getHostname()
-              << std::endl;
-    std::cout << "      size: "
-              << pool.getProp(zfsutils::interface::PoolProperty::size)
-              << std::endl;
-    std::cout << "  capacity: "
-              << pool.getProp(zfsutils::interface::PoolProperty::capacity)
-              << std::endl;
-}
-
 int main() {
     using namespace zfsutils::remote;
 
     std::cout << "Local pools: " << std::endl;
     for (auto &pool : zfsutils::Pool::getPools()) {
-        printPoolInfo(pool);
+        pool.printPoolInfo();
     }
 
     std::cout << "gRPC pools: " << std::endl;
@@ -45,7 +33,7 @@ int main() {
     }
 
     for (auto &pool : remotePools) {
-        printPoolInfo(pool);
+        pool.printPoolInfo();
     }
 
     zfsutils::Pool myPool = zfsutils::Pool::open("testpool");
@@ -59,6 +47,6 @@ int main() {
 
     std::cout << "name: " << mixedPools[0]->name() << std::endl;
     for (std::shared_ptr<zfsutils::interface::IPool> pool : mixedPools) {
-        printPoolInfo(*pool);
+        pool->printPoolInfo();
     }
 }

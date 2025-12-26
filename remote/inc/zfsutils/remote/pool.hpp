@@ -20,7 +20,6 @@ class PoolInterfaceClient {
 
     std::vector<RemotePoolInfo> ListPools() {
         remotezfs::v1::ListPoolsRequest request;
-        request.set_nmax(0);
 
         remotezfs::v1::Pool reply;
 
