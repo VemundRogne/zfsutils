@@ -26,6 +26,7 @@ int main() {
         "localhost:50000", grpc::InsecureChannelCredentials());
 
     auto baseClient = PoolInterfaceClient{channel};
+    auto datasetClient = DatasetInterfaceClient{channel};
 
     std::vector<RemotePool> remotePools;
 
@@ -35,7 +36,7 @@ int main() {
 
     for (auto &pool : remotePools) {
         pool.printPoolInfo();
-        baseClient.ListDatasets(pool);
+        datasetClient.ListDatasets(pool);
     }
 
     zfsutils::Pool myPool = zfsutils::Pool::open("testpool");

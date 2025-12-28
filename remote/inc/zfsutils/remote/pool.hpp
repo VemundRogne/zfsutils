@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pool.grpc.pb.h"
-#include "pool.pb.h"
+#include "remotezfs.grpc.pb.h"
+#include "remotezfs.pb.h"
 #include "zfsutils/interface/dataset.hpp"
 #include "zfsutils/interface/pool.hpp"
 #include <grpcpp/grpcpp.h>
@@ -20,13 +20,12 @@ struct RemoteDatasetInfo {
 class PoolInterfaceClient {
   public:
     PoolInterfaceClient(std::shared_ptr<grpc::Channel> channel)
-        : channel(channel),
-          stub_(remotezfs::v1::PoolInterface::NewStub(channel)) {}
+        : channel(channel), stub_(remotezfs::RemotePool::NewStub(channel)) {}
 
     std::vector<RemotePoolInfo> ListPools() {
-        remotezfs::v1::ListPoolsRequest request;
+        remotezfs::ListPoolsRequest request;
 
-        remotezfs::v1::ListPoolsReply reply;
+        remotezfs::ListPoolsReply reply;
 
         grpc::ClientContext context;
         stub_->ListPools(&context, request, &reply);
@@ -39,16 +38,27 @@ class PoolInterfaceClient {
         return remotePools;
     }
 
+  private:
+    // Keep the channel, so outputs can get the channel in their new calls
+    std::shared_ptr<grpc::Channel> channel;
+    std::unique_ptr<remotezfs::RemotePool::Stub> stub_;
+};
+
+class DatasetInterfaceClient {
+  public:
+    DatasetInterfaceClient(std::shared_ptr<grpc::Channel> channel)
+        : channel(channel), stub_(remotezfs::RemoteDataset::NewStub(channel)) {}
+
     std::vector<RemoteDatasetInfo>
     ListDatasets(zfsutils::interface::IPool &targetPool) {
         std::cout << "Calling listDatasets on " << targetPool.name()
                   << std::endl;
         std::vector<RemoteDatasetInfo> datasets;
 
-        remotezfs::v1::ListDatasetsRequest request;
-        request.mutable_target_pool()->set_name(targetPool.name());
+        remotezfs::ListDatasetsRequest request;
+        request.set_base(targetPool.name());
 
-        remotezfs::v1::ListDatasetsReply reply;
+        remotezfs::ListDatasetsReply reply;
 
         grpc::ClientContext context;
         stub_->ListDatasets(&context, request, &reply);
@@ -61,9 +71,8 @@ class PoolInterfaceClient {
     }
 
   private:
-    // Keep the channel, so outputs can get the channel in their new calls
     std::shared_ptr<grpc::Channel> channel;
-    std::unique_ptr<remotezfs::v1::PoolInterface::Stub> stub_;
+    std::unique_ptr<remotezfs::RemoteDataset::Stub> stub_;
 };
 
 class RemotePool : public zfsutils::interface::IPool {

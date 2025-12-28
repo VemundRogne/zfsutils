@@ -1,12 +1,6 @@
 syntax = "proto3";
 
-package remotezfs.v1;
-
-service PoolInterface {
-    rpc ListPools(ListPoolsRequest) returns (ListPoolsReply) {}
-    rpc getPoolProperty(PoolPropertyRequest) returns (PoolPropertyReply) {}
-    rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsReply) {}
-};
+package remotezfs;
 
 message ListPoolsRequest {}
 
@@ -27,16 +21,24 @@ message PoolPropertyRequest {
     string property = 2;
 }
 
+service RemotePool {
+    rpc ListPools(ListPoolsRequest) returns (ListPoolsReply) {}
+    rpc getPoolProperty(PoolPropertyRequest) returns (PoolPropertyReply) {}
+};
+
+
 message Dataset {
     string name = 1;
-    Pool parent_pool = 2;
 }
 
 message ListDatasetsRequest{
-    Pool target_pool = 1;
+    string base = 1;
 }
 
 message ListDatasetsReply{
     repeated Dataset datasets = 1;
 }
 
+service RemoteDataset {
+    rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsReply) {}
+};
