@@ -2,6 +2,7 @@
 
 #include "pool.grpc.pb.h"
 #include "pool.pb.h"
+#include "zfsutils/interface/dataset.hpp"
 #include "zfsutils/interface/pool.hpp"
 #include <grpcpp/grpcpp.h>
 
@@ -19,7 +20,8 @@ struct RemoteDatasetInfo {
 class PoolInterfaceClient {
   public:
     PoolInterfaceClient(std::shared_ptr<grpc::Channel> channel)
-        : stub_(remotezfs::v1::PoolInterface::NewStub(channel)) {}
+        : channel(channel),
+          stub_(remotezfs::v1::PoolInterface::NewStub(channel)) {}
 
     std::vector<RemotePoolInfo> ListPools() {
         remotezfs::v1::ListPoolsRequest request;
@@ -59,6 +61,8 @@ class PoolInterfaceClient {
     }
 
   private:
+    // Keep the channel, so outputs can get the channel in their new calls
+    std::shared_ptr<grpc::Channel> channel;
     std::unique_ptr<remotezfs::v1::PoolInterface::Stub> stub_;
 };
 
@@ -80,6 +84,17 @@ class RemotePool : public zfsutils::interface::IPool {
 
     std::string name_;
     std::string hostname_;
+};
+
+class RemoteDataset : public zfsutils::interface::IDataset {
+  public:
+    // A dataset is either top-level or a decendant of a top-level dataset
+    // We can just store the full path of each dataset as its name
+    RemoteDataset(std::shared_ptr<grpc::Channel> channel,
+                  std::string fullPath) {}
+
+  private:
+    std::string fullPath; // example: store/datasetA/datasetA1
 };
 
 } // namespace remote
