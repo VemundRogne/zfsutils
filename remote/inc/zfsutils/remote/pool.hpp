@@ -1,10 +1,14 @@
 #pragma once
 
-#include "remotezfs.grpc.pb.h"
-#include "remotezfs.pb.h"
 #include "zfsutils/interface/dataset.hpp"
 #include "zfsutils/interface/pool.hpp"
+
+#pragma push_macro("verify")
+#undef verify
+#include "remotezfs.grpc.pb.h"
+#include "remotezfs.pb.h"
 #include <grpcpp/grpcpp.h>
+#pragma pop_macro("verify")
 
 namespace zfsutils {
 namespace remote {

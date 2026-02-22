@@ -3,14 +3,17 @@
 //
 #include <iostream>
 
-#include "pool.grpc.pb.h"
-#include "pool.pb.h"
-#include <grpcpp/grpcpp.h>
-
 #include "zfsutils/pool.hpp"
 
 #include "zfsutils/interface/pool.hpp"
 #include "zfsutils/remote/pool.hpp"
+
+#pragma push_macro("verify")
+#undef verify
+#include "remotezfs.grpc.pb.h"
+#include "remotezfs.pb.h"
+#include <grpcpp/grpcpp.h>
+#pragma pop_macro("verify")
 
 int main() {
     using namespace zfsutils::remote;

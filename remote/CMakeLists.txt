@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_CXX_COMPILER g++-14)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/CPM.cmake)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../core _deps/zfsutils_core)
 
 project(zfsutils_remote CXX)
-
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../core _deps/zfsutils_core)
 
 list(PREPEND CMAKE_PREFIX_PATH "$ENV{HOME}/.local")
 find_package(Protobuf CONFIG REQUIRED)
