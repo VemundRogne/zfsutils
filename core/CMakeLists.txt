@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_CXX_COMPILER g++-14)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -7,45 +9,22 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/CPM.cmake)
 
 enable_testing()
 
-CPMAddPackage(
-    NAME zfs
-    GIT_REPOSITORY ssh://desktopserver/home/vemund/git/zfs.git
-    GIT_TAG zfs-2.3.4-grpc-compatible
-    DOWNLOAD_ONLY
-)
-
-
 project(zfsutils_core CXX)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../interface _deps/zfsutils_interface)
 
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/zfsbuilt
-    WORKING_DIRECTORY ${zfs_SOURCE_DIR}
-    COMMAND "./autogen.sh"
-    COMMAND "./configure"
-    COMMAND "make"
-    COMMAND ${CMAKE_COMMAND} -E echo "built" > ${CMAKE_CURRENT_BINARY_DIR}/zfsbuilt
-)
-
-add_custom_target(zfsbuild
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zfsbuilt
-)
-
 add_library(zfsutils ./src/pool.cpp ./src/dataset.cpp ./src/snapshot.cpp)
+
 target_include_directories(zfsutils PUBLIC ./inc)
-add_dependencies(zfsutils zfsbuild)
 target_link_libraries(zfsutils PUBLIC zfsutils_interface)
 
+find_package(PkgConfig REQUIRED libzfs)
+pkg_check_modules(ZFS REQUIRED libzfs)
 
 # Link to ZFS
-target_include_directories(zfsutils PUBLIC ${zfs_SOURCE_DIR}/include)
-target_include_directories(zfsutils PUBLIC ${zfs_SOURCE_DIR}/lib/libspl/include)
-target_include_directories(zfsutils PUBLIC ${zfs_SOURCE_DIR}/lib/libspl/include/os/linux)
-
-target_link_directories(zfsutils PUBLIC ${zfs_SOURCE_DIR}/.libs)
-target_link_libraries(zfsutils PUBLIC zfs)
-target_link_libraries(zfsutils PUBLIC nvpair)
+target_include_directories(zfsutils PUBLIC ${ZFS_INCLUDE_DIRS})
+target_link_libraries(zfsutils PUBLIC ${ZFS_LIBRARIES})
+target_compile_definitions(zfsutils PUBLIC ${ZFS_CFLAGS_OTHER})
 
 add_library(testutils ./test/testutils.cpp)
 target_include_directories(testutils PUBLIC ${CMAKE_CURRENT_LIST_DIR}/test)
