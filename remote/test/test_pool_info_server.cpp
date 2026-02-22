@@ -3,10 +3,13 @@
 
 #include "zfsutils/pool.hpp"
 
+#pragma push_macro("verify")
+#undef verify
 #include <grpcpp/grpcpp.h>
 
 #include "remotezfs.grpc.pb.h"
 #include "remotezfs.pb.h"
+#pragma pop_macro("verify")
 
 class RemotePoolService final : public remotezfs::RemotePool::Service {
     grpc::Status ListPools(grpc::ServerContext *context,

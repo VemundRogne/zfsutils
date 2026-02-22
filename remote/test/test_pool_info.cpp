@@ -3,14 +3,17 @@
 //
 #include <iostream>
 
-#include "pool.grpc.pb.h"
-#include "pool.pb.h"
-#include <grpcpp/grpcpp.h>
-
 #include "zfsutils/pool.hpp"
 
 #include "zfsutils/interface/pool.hpp"
 #include "zfsutils/remote/pool.hpp"
+
+#pragma push_macro("verify")
+#undef verify
+#include "remotezfs.grpc.pb.h"
+#include "remotezfs.pb.h"
+#include <grpcpp/grpcpp.h>
+#pragma pop_macro("verify")
 
 int main() {
     using namespace zfsutils::remote;
@@ -39,17 +42,22 @@ int main() {
         datasetClient.ListDatasets(pool);
     }
 
-    zfsutils::Pool myPool = zfsutils::Pool::open("testpool");
-    std::shared_ptr<zfsutils::Pool> myPoolShared =
-        std::make_shared<zfsutils::Pool>(std::move(myPool));
-    std::vector<std::shared_ptr<zfsutils::interface::IPool>> mixedPools{};
-    mixedPools.push_back(myPoolShared);
-    std::shared_ptr<RemotePool> myRemotePoolShared =
-        std::make_shared<RemotePool>(std::move(remotePools[0]));
-    mixedPools.push_back(myRemotePoolShared);
+    try {
+        zfsutils::Pool myPool = zfsutils::Pool::open("testpool");
+        std::shared_ptr<zfsutils::Pool> myPoolShared =
+            std::make_shared<zfsutils::Pool>(std::move(myPool));
+        std::vector<std::shared_ptr<zfsutils::interface::IPool>> mixedPools{};
+        mixedPools.push_back(myPoolShared);
+        std::shared_ptr<RemotePool> myRemotePoolShared =
+            std::make_shared<RemotePool>(std::move(remotePools[0]));
+        mixedPools.push_back(myRemotePoolShared);
 
-    std::cout << "name: " << mixedPools[0]->name() << std::endl;
-    for (std::shared_ptr<zfsutils::interface::IPool> pool : mixedPools) {
-        pool->printPoolInfo();
+        std::cout << "name: " << mixedPools[0]->name() << std::endl;
+        for (std::shared_ptr<zfsutils::interface::IPool> pool : mixedPools) {
+            pool->printPoolInfo();
+        }
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
     }
 }
