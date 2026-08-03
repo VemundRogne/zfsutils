@@ -1,6 +1,7 @@
 #include "libzfs.h"
 #include "zfsutils/core.hpp"
 #include "zfsutils/pool.hpp"
+#include <algorithm>
 #include <iostream>
 #include <ranges>
 

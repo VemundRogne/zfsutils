@@ -24,15 +24,12 @@ class IPool {
 
     void printPoolInfo() {
         std::cout << " --- POOL --- " << std::endl;
-        std::cout << std::format("  '{}' on {}", name(), getHostname())
-                  << std::endl;
+        std::cout << "  '" << name() << "' on " << getHostname() << std::endl;
 
-        std::cout << std::format("    size: {}", getProp(PoolProperty::size))
-                  << std::endl;
+        std::cout << "    size: " << getProp(PoolProperty::size) << std::endl;
 
-        std::cout << std::format(
-                         "    capacity: {}",
-                         getProp(zfsutils::interface::PoolProperty::capacity))
+        std::cout << "    capacity: "
+                  << getProp(zfsutils::interface::PoolProperty::capacity)
                   << std::endl;
     }
 };
